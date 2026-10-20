@@ -6,8 +6,13 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
-RUN groupadd --system app && useradd --system --gid app --home-dir /app app
+RUN groupadd --system app && useradd --system --gid app --home-dir /app app \
+    && mkdir -p /data/storage && chown app:app /data/storage
 WORKDIR /app
+
+# Private document storage (company branding assets). Mounted as a named
+# volume; never served directly — only through authorised API endpoints.
+ENV PRIVATE_STORAGE_ROOT=/data/storage
 
 COPY requirements/ requirements/
 

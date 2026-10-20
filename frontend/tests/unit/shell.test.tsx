@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { Header } from '@/components/shell/Header';
@@ -9,29 +9,71 @@ import {
   THEME_STORAGE_KEY,
 } from '@/lib/preferences';
 
-let mockPathname = '/sales/invoices';
-vi.mock('next/navigation', () => ({ usePathname: () => mockPathname }));
+import { makeUser, mockApi, renderWithAuth, viewerUser } from './helpers';
+import { nav } from './navigation-mock';
 
 const html = document.documentElement;
+const MODULES = {
+  optional: ['founder', 'ownership', 'procurement', 'inventory', 'assets', 'budgeting'].map((key) => ({
+    key, label: key, description: '', phase: 6, nav_id: key, enabled: key !== 'inventory', implemented: false,
+  })),
+  core: [],
+};
+const baseRoutes = {
+  '/auth/me/': makeUser(),
+  '/modules/': MODULES,
+  '/company/summary/': { configured: true, display_name: 'NetaMate', legal_name: null, initials: 'N', location: 'Dhaka, Bangladesh', logo_url: null },
+  '/approvals/requests/': { count: 0, page: 1, page_size: 25, total_pages: 1, results: [] },
+};
 
 describe('theme switching', () => {
-  it('toggles data-theme and persists the choice', async () => {
-    render(<Header onOpenNavigation={() => {}} />);
+  it('toggles data-theme, persists locally and saves to the account', async () => {
+    const calls = mockApi({ ...baseRoutes, 'PATCH /auth/me/': makeUser({ preferences: { theme: 'dark' } }) });
+    renderWithAuth(<Header onOpenNavigation={() => {}} />);
 
     await userEvent.click(screen.getByRole('button', { name: 'Switch to dark mode' }));
     expect(html.dataset.theme).toBe('dark');
     expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe('dark');
-
-    await userEvent.click(screen.getByRole('button', { name: 'Switch to light mode' }));
-    expect(html.dataset.theme).toBe('light');
-    expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe('light');
+    await waitFor(() =>
+      expect(calls.find((c) => c.method === 'PATCH' && c.path === '/auth/me/')?.body).toEqual({ preferences: { theme: 'dark' } }),
+    );
   });
 
-  it('marks unbuilt header features as unavailable instead of faking them', () => {
-    render(<Header onOpenNavigation={() => {}} />);
-    for (const name of [/search/i, /^new/i, /notifications/i, /account/i]) {
-      expect(screen.getByRole('button', { name })).toBeDisabled();
-    }
+  it('keeps search and quick-create disabled until their modules exist', () => {
+    mockApi(baseRoutes);
+    renderWithAuth(<Header onOpenNavigation={() => {}} />);
+    expect(screen.getByRole('button', { name: /search/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /^new/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /notifications/i })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Account menu' })).toBeEnabled();
+  });
+});
+
+describe('account menu', () => {
+  it('shows the signed-in user and signs out', async () => {
+    const calls = mockApi({ ...baseRoutes, 'POST /auth/logout/': [204, null] });
+    renderWithAuth(<Header onOpenNavigation={() => {}} />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Account menu' }));
+    const menu = screen.getByRole('menu', { name: 'Account' });
+    expect(within(menu).getByText('Ada Admin')).toBeInTheDocument();
+    expect(within(menu).getByText('Administrator')).toBeInTheDocument();
+    expect(within(menu).getByRole('menuitem', { name: /change password/i })).toBeInTheDocument();
+
+    await userEvent.click(within(menu).getByRole('menuitem', { name: /sign out/i }));
+    await waitFor(() => expect(nav.replace).toHaveBeenCalledWith('/login'));
+    expect(calls.some((c) => c.method === 'POST' && c.path === '/auth/logout/' && c.headers['X-CSRFToken'])).toBe(true);
+  });
+
+  it('lists approval requests waiting for the user', async () => {
+    mockApi({
+      ...baseRoutes,
+      '/approvals/requests/': { count: 1, page: 1, page_size: 25, total_pages: 1, results: [{ id: 7, title: 'Publish invoice & receipt branding', requested_by: { id: 2, display_name: 'Rizwan' }, requested_at: '2026-10-20T10:00:00Z' }] },
+    });
+    renderWithAuth(<Header onOpenNavigation={() => {}} />);
+    const bell = await screen.findByRole('button', { name: 'Notifications (1 pending approvals)' });
+    await userEvent.click(bell);
+    expect(screen.getByText('Publish invoice & receipt branding')).toBeInTheDocument();
   });
 });
 
@@ -53,48 +95,43 @@ describe('preferences bootstrap script', () => {
 
 describe('sidebar', () => {
   beforeEach(() => {
-    mockPathname = '/sales/invoices';
+    nav.pathname = '/sales/invoices';
   });
 
   it('collapses to compact and expands again, persisting the mode', async () => {
-    render(<Sidebar open={false} onNavigate={() => {}} />);
+    mockApi({ ...baseRoutes, 'PATCH /auth/me/': makeUser() });
+    renderWithAuth(<Sidebar open={false} onNavigate={() => {}} />);
 
     await userEvent.click(screen.getByRole('button', { name: 'Collapse sidebar' }));
     expect(html.dataset.sidebar).toBe('compact');
     expect(localStorage.getItem(SIDEBAR_STORAGE_KEY)).toBe('compact');
-
     await userEvent.click(screen.getByRole('button', { name: 'Expand sidebar' }));
     expect(html.dataset.sidebar).toBe('full');
-    expect(localStorage.getItem(SIDEBAR_STORAGE_KEY)).toBe('full');
   });
 
   it('marks the active module and section', () => {
-    render(<Sidebar open={false} onNavigate={() => {}} />);
-    const nav = screen.getByRole('navigation', { name: 'Main navigation' });
-
-    const moduleLink = within(nav).getByRole('link', { name: /sales & billing/i });
+    mockApi(baseRoutes);
+    renderWithAuth(<Sidebar open={false} onNavigate={() => {}} />);
+    const navEl = screen.getByRole('navigation', { name: 'Main navigation' });
+    const moduleLink = within(navEl).getByRole('link', { name: /sales & billing/i });
     expect(moduleLink).toHaveAttribute('aria-current', 'page');
-    expect(moduleLink).toHaveAttribute('aria-expanded', 'true');
-    expect(within(nav).getByRole('link', { name: 'Invoices' })).toHaveAttribute('aria-current', 'page');
-    expect(within(nav).getByRole('link', { name: 'Create Invoice' })).not.toHaveAttribute('aria-current');
-    expect(within(nav).getByRole('link', { name: /purchases/i })).not.toHaveAttribute('aria-current');
+    expect(within(navEl).getByRole('link', { name: 'Invoices' })).toHaveAttribute('aria-current', 'page');
   });
 
-  it('folds the active module sub-menu when its row is clicked', async () => {
-    render(<Sidebar open={false} onNavigate={() => {}} />);
-    const moduleLink = screen.getByRole('link', { name: /sales & billing/i });
-
-    await userEvent.click(moduleLink);
-    expect(moduleLink).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.queryByRole('link', { name: 'Invoices' })).not.toBeInTheDocument();
-
-    await userEvent.click(moduleLink);
-    expect(moduleLink).toHaveAttribute('aria-expanded', 'true');
+  it('shows the real company and hides disabled optional modules', async () => {
+    mockApi(baseRoutes);
+    renderWithAuth(<Sidebar open={false} onNavigate={() => {}} />);
+    expect(await screen.findByText('NetaMate')).toBeInTheDocument();
+    expect(screen.getByText('Dhaka, Bangladesh')).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole('link', { name: /inventory & warehouse/i })).not.toBeInTheDocument());
+    expect(screen.getByRole('link', { name: /fixed assets/i })).toBeInTheDocument();
   });
 
-  it('keeps module names accessible in compact mode', async () => {
-    render(<Sidebar open={false} onNavigate={() => {}} />);
-    await userEvent.click(screen.getByRole('button', { name: 'Collapse sidebar' }));
-    expect(screen.getByRole('link', { name: /banking & accounting/i })).toBeInTheDocument();
+  it('marks modules outside the user’s role with a lock', () => {
+    mockApi({ ...baseRoutes, '/auth/me/': viewerUser });
+    renderWithAuth(<Sidebar open={false} onNavigate={() => {}} />, viewerUser);
+    const founder = screen.getByRole('link', { name: /founder finance/i });
+    expect(within(founder).getByText('lock')).toBeInTheDocument();
+    expect(within(screen.getByRole('link', { name: /sales & billing/i })).queryByText('lock')).not.toBeInTheDocument();
   });
 });

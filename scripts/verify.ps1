@@ -1,4 +1,4 @@
-# Runs every MateERP Phase 1 check. Requires the Docker stack to be running
+# Runs every MateERP check (backend, frontend, end-to-end). Requires the Docker stack to be running
 # (docker compose up -d) and frontend dependencies installed (npm ci).
 #   powershell -ExecutionPolicy Bypass -File scripts\verify.ps1 [-SkipE2E]
 param([switch]$SkipE2E)
@@ -25,6 +25,7 @@ try {
     Step 'Backend: ruff lint' { docker compose exec -T backend ruff check . }
     Step 'Backend: ruff format' { docker compose exec -T backend ruff format --check . }
     Step 'Backend: pytest (PostgreSQL)' { docker compose exec -T backend pytest }
+    Step 'Backend: OpenAPI schema (no warnings)' { docker compose exec -T backend python manage.py spectacular --validate --fail-on-warn --file /tmp/schema.yml }
 
     Push-Location frontend
     try {

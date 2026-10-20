@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { IBM_Plex_Mono, IBM_Plex_Sans } from 'next/font/google';
+import { Herr_Von_Muellerhoff, IBM_Plex_Mono, IBM_Plex_Sans, IBM_Plex_Serif } from 'next/font/google';
 import localFont from 'next/font/local';
 import type { ReactNode } from 'react';
 
@@ -20,6 +20,21 @@ const plexMono = IBM_Plex_Mono({
   subsets: ['latin'],
   weight: ['400', '500', '600'],
   variable: '--font-plex-mono',
+  display: 'swap',
+});
+
+// Document typography: serif option and the typed-signature script face.
+const plexSerif = IBM_Plex_Serif({
+  subsets: ['latin'],
+  weight: ['400', '600', '700'],
+  variable: '--font-plex-serif',
+  display: 'swap',
+});
+
+const signature = Herr_Von_Muellerhoff({
+  subsets: ['latin'],
+  weight: '400',
+  variable: '--font-signature',
   display: 'swap',
 });
 
@@ -44,7 +59,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       data-theme="light"
       data-sidebar="full"
       suppressHydrationWarning
-      className={`${plexSans.variable} ${plexMono.variable} ${astro.variable}`}
+      className={`${plexSans.variable} ${plexMono.variable} ${plexSerif.variable} ${signature.variable} ${astro.variable}`}
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: PREFERENCES_BOOTSTRAP_SCRIPT }} />

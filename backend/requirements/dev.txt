@@ -2,3 +2,6 @@
 pytest==9.1.1
 pytest-django==4.14.0
 ruff==0.17.1
+# Type stubs for editor/type-checker support only (no runtime effect).
+django-stubs==6.1.2
+djangorestframework-stubs==3.18.1

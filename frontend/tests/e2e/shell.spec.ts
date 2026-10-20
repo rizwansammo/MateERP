@@ -99,6 +99,6 @@ test.describe('backend integration', () => {
     const stats = page.getByTestId('health-stats');
     await expect(stats).toContainText('Operational');
     await expect(stats).toContainText('Connected');
-    await expect(stats).toContainText('0.1.0');
+    await expect(stats).toContainText('0.2.0');
   });
 });

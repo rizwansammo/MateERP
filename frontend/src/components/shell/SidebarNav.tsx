@@ -5,7 +5,16 @@ import type { MouseEvent } from 'react';
 
 import { Icon } from '@/components/ui/Icon';
 import { cn } from '@/lib/cn';
-import { NAVIGATION, itemHref, resolveRoute, subHref } from '@/lib/navigation';
+import { useModules } from '@/lib/api/hooks';
+import { useAuth } from '@/lib/auth/AuthProvider';
+import {
+  NAVIGATION,
+  canAccess,
+  isVisible,
+  itemHref,
+  resolveRoute,
+  subHref,
+} from '@/lib/navigation';
 import { useSidebarMode } from '@/lib/preferences';
 
 interface SidebarNavProps {
@@ -23,11 +32,17 @@ function compactInEffect(mode: string): boolean {
 
 export function SidebarNav({ pathname, openOverrides, onToggle, onNavigate }: SidebarNavProps) {
   const { mode } = useSidebarMode();
+  const { can } = useAuth();
+  const { states: modules } = useModules();
   const route = resolveRoute(pathname);
+  const groups = NAVIGATION.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => isVisible(item, modules)),
+  })).filter((group) => group.items.length > 0);
 
   return (
     <nav aria-label="Main navigation" className="flex-1 overflow-y-auto overflow-x-hidden pt-1.5 pb-4">
-      {NAVIGATION.map((group) => (
+      {groups.map((group) => (
         <div key={group.label} role="group" aria-label={group.label}>
           <div className="overflow-hidden whitespace-nowrap px-5 pt-3.5 pb-1.5 text-[10px] font-semibold uppercase tracking-[.14em] text-sb-muted compact:text-center">
             <span className="compact:hidden">{group.label}</span>
@@ -38,7 +53,9 @@ export function SidebarNav({ pathname, openOverrides, onToggle, onNavigate }: Si
 
           {group.items.map((item) => {
             const active = route?.item.id === item.id;
-            const hasSubs = Boolean(item.subs?.length);
+            const subs = (item.subs ?? []).filter((s) => isVisible(s, modules));
+            const hasSubs = subs.length > 0;
+            const locked = !canAccess(item, can);
             const isOpen = hasSubs && (openOverrides[item.id] ?? active);
 
             const onItemClick = (event: MouseEvent<HTMLAnchorElement>) => {
@@ -76,8 +93,15 @@ export function SidebarNav({ pathname, openOverrides, onToggle, onNavigate }: Si
                       active ? 'bg-brand' : 'bg-transparent',
                     )}
                   />
-                  <Icon name={item.icon} size={19} className={active ? 'text-brand' : 'text-sb-tx2'} />
+                  <Icon
+                    name={item.icon}
+                    size={19}
+                    className={active ? 'text-brand' : locked ? 'text-sb-muted' : 'text-sb-tx2'}
+                  />
                   <span className="min-w-0 flex-1 truncate compact:sr-only">{item.label}</span>
+                  {locked && (
+                    <Icon name="lock" size={14} className="text-sb-muted compact:hidden" />
+                  )}
                   {hasSubs && (
                     <Icon
                       name="expand_more"
@@ -90,9 +114,9 @@ export function SidebarNav({ pathname, openOverrides, onToggle, onNavigate }: Si
                   )}
                 </Link>
 
-                {isOpen && item.subs && (
+                {isOpen && hasSubs && (
                   <div className="relative mt-0.5 mb-1.5 ml-[29px] border-l border-sb-bd compact:hidden">
-                    {item.subs.map((s) => {
+                    {subs.map((s) => {
                       const current = active && route?.sub?.slug === s.slug;
                       return (
                         <Link

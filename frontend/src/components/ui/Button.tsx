@@ -5,7 +5,7 @@ import { cn } from '@/lib/cn';
 import { Icon } from './Icon';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost';
-export type ButtonSize = 'md' | 'sm';
+export type ButtonSize = 'md' | 'sm' | 'xs';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
@@ -23,6 +23,8 @@ const variants: Record<ButtonVariant, string> = {
 const sizes: Record<ButtonSize, string> = {
   md: 'h-[34px] gap-1.5 px-[14px] text-[12.5px]',
   sm: 'h-[30px] gap-[5px] px-[11px] text-[12px]',
+  /** Table row actions (prototype DataTable: 26px, 11.5px). */
+  xs: 'h-[26px] gap-1 px-2 text-[11.5px]',
 };
 
 export function Button({
@@ -47,7 +49,7 @@ export function Button({
       )}
       {...rest}
     >
-      {icon && <Icon name={icon} size={size === 'md' ? 17 : 16} />}
+      {icon && <Icon name={icon} size={size === 'md' ? 17 : size === 'sm' ? 16 : 15} />}
       {children}
     </button>
   );

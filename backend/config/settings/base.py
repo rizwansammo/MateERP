@@ -18,7 +18,7 @@ _ENV_FILE = BASE_DIR.parent / ".env"
 if _ENV_FILE.is_file():
     environ.Env.read_env(_ENV_FILE)
 
-MATEERP_VERSION = "0.1.0"
+MATEERP_VERSION = "0.2.0"
 MATEERP_ENVIRONMENT = "base"
 
 SECRET_KEY = env("DJANGO_SECRET_KEY", default="")
@@ -30,10 +30,16 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.staticfiles",
+    "django.contrib.postgres",
     "rest_framework",
     "drf_spectacular",
     "apps.core",
+    "apps.audit",
+    "apps.files",
     "apps.accounts",
+    "apps.company",
+    "apps.approvals",
+    "apps.branding",
 ]
 
 MIDDLEWARE = [
@@ -76,6 +82,25 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # --- Authentication ----------------------------------------------------------
 AUTH_USER_MODEL = "accounts.User"
+AUTHENTICATION_BACKENDS = ["apps.accounts.backends.UsernameOrEmailBackend"]
+
+# Server-side sessions in PostgreSQL. A session without "remember me" ends
+# with the browser and after 12 idle hours; "remember me" extends the idle
+# limit to 14 days. Every request renews the expiry (sliding window).
+SESSION_COOKIE_NAME = "mateerp_session"
+SESSION_COOKIE_AGE = 12 * 60 * 60
+SESSION_REMEMBER_AGE = 14 * 24 * 60 * 60
+SESSION_SAVE_EVERY_REQUEST = True
+
+# The CSRF cookie must be readable by the frontend, which echoes it in the
+# X-CSRFToken header (Django's standard double-submit check).
+CSRF_COOKIE_NAME = "mateerp_csrftoken"
+CSRF_COOKIE_HTTPONLY = False
+CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])
+
+# Proxies allowed to report the client address via X-Forwarded-For (CIDRs).
+# Empty means REMOTE_ADDR is always used.
+MATEERP_TRUSTED_PROXIES = env.list("MATEERP_TRUSTED_PROXIES", default=[])
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
@@ -97,6 +122,12 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
+# --- Private file storage ----------------------------------------------------
+# Never exposed through a URL; files are streamed by authorised API views.
+PRIVATE_STORAGE_ROOT = env("PRIVATE_STORAGE_ROOT", default=str(BASE_DIR / "storage"))
+FILE_UPLOAD_MAX_MEMORY_SIZE = 3 * 1024 * 1024
+DATA_UPLOAD_MAX_MEMORY_SIZE = 3 * 1024 * 1024
+
 # --- Security baseline (tightened further in prod) --------------------------
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = "same-origin"
@@ -110,10 +141,14 @@ REST_FRAMEWORK = {
     "DEFAULT_VERSIONING_CLASS": "rest_framework.versioning.NamespaceVersioning",
     "DEFAULT_VERSION": "v1",
     "ALLOWED_VERSIONS": ("v1",),
-    "DEFAULT_AUTHENTICATION_CLASSES": ("rest_framework.authentication.SessionAuthentication",),
-    # Secure by default: every endpoint requires authentication unless it
-    # explicitly opts out (e.g. the health check).
-    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
+    # Session auth that enforces CSRF on every unsafe request, including
+    # anonymous ones such as login.
+    "DEFAULT_AUTHENTICATION_CLASSES": ("apps.accounts.authentication.SessionAuthentication",),
+    # Secure by default: every endpoint requires an active user who is not
+    # pending a forced password change, unless it explicitly opts out.
+    "DEFAULT_PERMISSION_CLASSES": ("apps.accounts.authorization.IsActiveUser",),
+    "DEFAULT_PAGINATION_CLASS": "apps.core.pagination.StandardPagination",
+    "PAGE_SIZE": 25,
     "DEFAULT_RENDERER_CLASSES": ("rest_framework.renderers.JSONRenderer",),
     "DEFAULT_PARSER_CLASSES": ("rest_framework.parsers.JSONParser",),
     "EXCEPTION_HANDLER": "apps.core.exceptions.api_exception_handler",
@@ -130,6 +165,11 @@ SPECTACULAR_SETTINGS = {
     "VERSION": MATEERP_VERSION,
     "SERVE_INCLUDE_SCHEMA": False,
     "SCHEMA_PATH_PREFIX": r"/api/v[0-9]+",
+    "ENUM_NAME_OVERRIDES": {
+        "HealthStatusEnum": ["ok", "unavailable"],
+        "ApprovalStatusEnum": "apps.approvals.models.ApprovalRequest.Status",
+        "AuditOutcomeEnum": "apps.audit.models.AuditEvent.Outcome",
+    },
 }
 
 # --- Logging -----------------------------------------------------------------

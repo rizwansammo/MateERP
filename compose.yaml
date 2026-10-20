@@ -34,6 +34,11 @@ services:
       DJANGO_LOG_LEVEL: ${DJANGO_LOG_LEVEL:-INFO}
       DJANGO_TIME_ZONE: ${DJANGO_TIME_ZONE:-Asia/Dhaka}
       DATABASE_URL: postgres://${POSTGRES_USER:-mateerp}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-mateerp}
+      DJANGO_CSRF_TRUSTED_ORIGINS: ${DJANGO_CSRF_TRUSTED_ORIGINS:-http://localhost:3100,http://127.0.0.1:3100}
+      # The Next.js dev proxy reaches the container through the Docker gateway;
+      # only that hop may supply X-Forwarded-For.
+      MATEERP_TRUSTED_PROXIES: ${MATEERP_TRUSTED_PROXIES:-172.16.0.0/12,192.168.0.0/16}
+      PRIVATE_STORAGE_ROOT: /data/storage
     command: >
       sh -c "python manage.py migrate --noinput &&
              python manage.py runserver 0.0.0.0:8000"
@@ -41,6 +46,7 @@ services:
       - "127.0.0.1:${MATEERP_BACKEND_PORT:-8100}:8000"
     volumes:
       - ./backend:/app
+      - mateerp-storage:/data/storage
     depends_on:
       db:
         condition: service_healthy
@@ -49,3 +55,5 @@ services:
 volumes:
   mateerp-pgdata:
     name: mateerp-pgdata
+  mateerp-storage:
+    name: mateerp-storage

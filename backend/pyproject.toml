@@ -1,6 +1,6 @@
 [project]
 name = "mateerp-backend"
-version = "0.1.0"
+version = "0.2.0"
 description = "MateERP backend (Django + Django REST Framework)"
 requires-python = ">=3.13"
 
@@ -9,6 +9,25 @@ requires-python = ">=3.13"
 # (the dev container sets one), so tests always use the test settings.
 python_files = ["test_*.py"]
 addopts = "-ra --strict-markers --ds=config.settings.test"
+
+# Editor type checking only: use the optional local venv (see docs/development.md).
+[tool.pyrefly]
+site-package-path = [".venv/Lib/site-packages", ".venv/lib/python3.13/site-packages"]
+
+[tool.pyrefly.errors]
+# Pyrefly cannot run the django-stubs mypy plugin, so Django's generated
+# attributes (FK *_id fields, managers, request.user narrowing) look missing.
+# Ruff and the test suite are the quality gates; these checks are disabled
+# to keep editor diagnostics meaningful.
+bad-override = false
+bad-override-mutable-attribute = false
+untyped-import = false
+missing-attribute = false
+bad-argument-type = false
+bad-assignment = false
+bad-context-manager = false
+not-iterable = false
+no-matching-overload = false
 
 [tool.ruff]
 target-version = "py313"
@@ -19,6 +38,7 @@ extend-exclude = ["**/migrations/*"]
 select = ["E", "F", "W", "I", "B", "UP", "DJ", "SIM", "S"]
 
 [tool.ruff.lint.per-file-ignores]
-"**/tests/**" = ["S101", "S105", "S603"]
+"**/tests/**" = ["S101", "S105", "S106", "S107", "S603"]
+"conftest.py" = ["S101", "S105"]
 "config/settings/dev.py" = ["S105"]
 "config/settings/test.py" = ["S105"]

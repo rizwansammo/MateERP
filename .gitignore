@@ -34,3 +34,6 @@ storage/
 *.swp
 .DS_Store
 Thumbs.db
+
+# Playwright signed-in state (contains a session cookie)
+frontend/tests/e2e/.auth/

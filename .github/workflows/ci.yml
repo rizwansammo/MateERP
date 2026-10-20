@@ -41,6 +41,9 @@ jobs:
         env:
           DJANGO_SETTINGS_MODULE: config.settings.test
       - run: pytest
+      - run: python manage.py spectacular --validate --fail-on-warn --file /tmp/schema.yml
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings.test
 
   frontend:
     runs-on: ubuntu-latest

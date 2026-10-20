@@ -11,6 +11,8 @@ export interface Stat {
   icon?: string;
   /** Colour of the value and of the 2px top accent bar. */
   tone?: 'default' | 'ok' | 'warn' | 'err' | 'accent';
+  /** Cyan top bar with a neutral value (prototype "accent" KPI). */
+  accentBar?: boolean;
 }
 
 const valueTone: Record<NonNullable<Stat['tone']>, string> = {
@@ -30,7 +32,16 @@ const barTone: Record<NonNullable<Stat['tone']>, string> = {
 };
 
 /** KPI strip: a shared-border grid of stat tiles. */
-export function StatGrid({ stats, minWidth = 190 }: { stats: Stat[]; minWidth?: number }) {
+export function StatGrid({
+  stats,
+  minWidth = 190,
+  small = false,
+}: {
+  stats: Stat[];
+  minWidth?: number;
+  /** 18px values, as used for configuration summaries. */
+  small?: boolean;
+}) {
   return (
     <div
       className="grid border-l border-t border-bd"
@@ -43,7 +54,9 @@ export function StatGrid({ stats, minWidth = 190 }: { stats: Stat[]; minWidth?: 
             key={stat.label}
             className="relative flex min-w-0 flex-col gap-1.5 border-b border-r border-bd bg-sf px-[18px] pt-4 pb-[15px]"
           >
-            <div className={cn('absolute left-0 top-0 h-0.5 w-full', barTone[tone])} />
+            <div
+              className={cn('absolute left-0 top-0 h-0.5 w-full', stat.accentBar ? 'bg-ac' : barTone[tone])}
+            />
             <div className="flex items-center justify-between gap-2">
               <span className="truncate text-[10.5px] font-semibold uppercase tracking-[.08em] text-tx3">
                 {stat.label}
@@ -52,7 +65,8 @@ export function StatGrid({ stats, minWidth = 190 }: { stats: Stat[]; minWidth?: 
             </div>
             <div
               className={cn(
-                'truncate text-[22px] font-semibold tracking-[-.015em] tabular-nums',
+                'truncate font-semibold tracking-[-.015em] tabular-nums',
+                small ? 'text-[18px]' : 'text-[22px]',
                 valueTone[tone],
               )}
             >

@@ -24,6 +24,18 @@ from .middleware import get_request_id
 logger = logging.getLogger("mateerp.api")
 
 
+class BusinessRuleViolation(exceptions.APIException):
+    """A request that is well-formed but conflicts with current state or a rule (409).
+
+    Raise with a stable ``code`` so clients can react, e.g.
+    ``BusinessRuleViolation("…", code="last_administrator")``.
+    """
+
+    status_code = status.HTTP_409_CONFLICT
+    default_detail = "The request conflicts with the current state."
+    default_code = "conflict"
+
+
 def error_payload(code: str, message: str, details: Any = None) -> dict[str, Any]:
     return {
         "error": {

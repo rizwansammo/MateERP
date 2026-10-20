@@ -1,24 +1,11 @@
 import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
 
-import { PlannedModule } from '@/features/system/PlannedModule';
-import { NAVIGATION, itemHref, resolveRoute } from '@/lib/navigation';
+import { ModuleRoute } from '@/features/system/ModuleRoute';
+import { itemHref, resolveRoute } from '@/lib/navigation';
 
 interface Props {
   params: Promise<{ slug: string[] }>;
-}
-
-/** Pre-render every module section in the navigation tree. */
-export function generateStaticParams() {
-  return NAVIGATION.flatMap((group) =>
-    group.items
-      .filter((item) => item.id !== 'dashboard')
-      .flatMap((item) =>
-        item.subs?.length
-          ? item.subs.map((s) => ({ slug: [item.id, ...s.slug.split('/')] }))
-          : [{ slug: [item.id] }],
-      ),
-  );
 }
 
 function resolve(slug: string[]) {
@@ -42,5 +29,5 @@ export default async function ModulePage({ params }: Props) {
   // A bare module URL opens its first section, as in the prototype.
   if (slug.length === 1 && route.item.subs?.length) redirect(itemHref(route.item));
 
-  return <PlannedModule item={route.item} group={route.group.label} current={route.sub} />;
+  return <ModuleRoute itemId={route.item.id} group={route.group.label} subSlug={route.sub?.slug ?? null} />;
 }

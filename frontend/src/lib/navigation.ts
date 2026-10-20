@@ -4,7 +4,7 @@
  * modules above CURRENT_PHASE are shown as planned, never as working features.
  */
 
-export const CURRENT_PHASE = 1;
+export const CURRENT_PHASE = 2;
 
 export const PHASES: Record<number, string> = {
   1: 'Project Foundation',
@@ -19,6 +19,10 @@ export const PHASES: Record<number, string> = {
 export interface NavSub {
   slug: string;
   label: string;
+  /** Delivery phase when it differs from the parent module. */
+  phase?: number;
+  /** Optional module (Settings → Modules) this section belongs to. */
+  module?: string;
 }
 
 export interface NavItem {
@@ -28,6 +32,10 @@ export interface NavItem {
   phase: number;
   summary: string;
   subs?: NavSub[];
+  /** Any one of these permissions grants access (UX only; the API enforces). */
+  permissions?: string[];
+  /** Optional module key; hidden from navigation while disabled. */
+  module?: string;
 }
 
 export interface NavGroup {
@@ -35,7 +43,11 @@ export interface NavGroup {
   items: NavItem[];
 }
 
-const sub = (slug: string, label: string): NavSub => ({ slug, label });
+const sub = (slug: string, label: string, extra: Partial<NavSub> = {}): NavSub => ({
+  slug,
+  label,
+  ...extra,
+});
 
 export const NAVIGATION: NavGroup[] = [
   {
@@ -55,6 +67,7 @@ export const NAVIGATION: NavGroup[] = [
     items: [
       {
         id: 'sales',
+        permissions: ['finance.view'],
         label: 'Sales & Billing',
         icon: 'request_quote',
         phase: 4,
@@ -75,6 +88,7 @@ export const NAVIGATION: NavGroup[] = [
       },
       {
         id: 'purchases',
+        permissions: ['finance.view', 'expenses.manage', 'procurement.manage'],
         label: 'Purchases & Expenses',
         icon: 'shopping_bag',
         phase: 4,
@@ -85,13 +99,14 @@ export const NAVIGATION: NavGroup[] = [
           sub('expenses', 'Expenses'),
           sub('recurring', 'Recurring Expenses'),
           sub('vendors', 'Vendors & Suppliers'),
-          sub('orders', 'Purchase Orders'),
+          sub('orders', 'Purchase Orders', { module: 'procurement' }),
           sub('bills', 'Vendor Bills'),
           sub('history', 'Purchase History'),
         ],
       },
       {
         id: 'banking',
+        permissions: ['finance.view'],
         label: 'Banking & Accounting',
         icon: 'account_balance',
         phase: 3,
@@ -112,6 +127,8 @@ export const NAVIGATION: NavGroup[] = [
       },
       {
         id: 'founder',
+        permissions: ['founder.view'],
+        module: 'founder',
         label: 'Founder Finance',
         icon: 'handshake',
         phase: 5,
@@ -130,6 +147,8 @@ export const NAVIGATION: NavGroup[] = [
       },
       {
         id: 'ownership',
+        permissions: ['founder.view', 'ownership.manage'],
+        module: 'ownership',
         label: 'Ownership & Capital',
         icon: 'donut_large',
         phase: 5,
@@ -145,6 +164,8 @@ export const NAVIGATION: NavGroup[] = [
       },
       {
         id: 'budgets',
+        permissions: ['finance.view', 'budgets.manage'],
+        module: 'budgeting',
         label: 'Budgets & Costs',
         icon: 'savings',
         phase: 6,
@@ -162,6 +183,7 @@ export const NAVIGATION: NavGroup[] = [
     items: [
       {
         id: 'inventory',
+        module: 'inventory',
         label: 'Inventory & Warehouse',
         icon: 'inventory_2',
         phase: 6,
@@ -177,6 +199,7 @@ export const NAVIGATION: NavGroup[] = [
       },
       {
         id: 'assets',
+        module: 'assets',
         label: 'Fixed Assets',
         icon: 'devices',
         phase: 6,
@@ -227,6 +250,7 @@ export const NAVIGATION: NavGroup[] = [
     items: [
       {
         id: 'reports',
+        permissions: ['finance.view'],
         label: 'Reports & Analytics',
         icon: 'monitoring',
         phase: 6,
@@ -249,9 +273,9 @@ export const NAVIGATION: NavGroup[] = [
           sub('financial', 'Financial Settings'),
           sub('currency', 'Currency Settings'),
           sub('tax', 'Tax Settings'),
-          sub('notifications', 'Notification Preferences'),
+          sub('notifications', 'Notification Preferences', { phase: 4 }),
           sub('audit', 'Audit Logs'),
-          sub('integrations', 'Integration Settings'),
+          sub('integrations', 'Integration Settings', { phase: 7 }),
           sub('preferences', 'Application Preferences'),
           sub('about', 'About MateERP'),
         ],
@@ -308,4 +332,16 @@ export function resolveRoute(pathname: string): ResolvedRoute | null {
     return null;
   }
   return null;
+}
+
+export type ModuleStates = Record<string, boolean>;
+
+/** Optional modules that are switched off are hidden, as in the prototype. */
+export function isVisible(entry: { module?: string }, modules: ModuleStates): boolean {
+  return !entry.module || modules[entry.module] !== false;
+}
+
+/** UX hint only: the API enforces every permission independently. */
+export function canAccess(item: NavItem, can: (code: string) => boolean): boolean {
+  return !item.permissions || item.permissions.some(can);
 }

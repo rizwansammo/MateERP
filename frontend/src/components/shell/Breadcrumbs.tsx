@@ -15,6 +15,7 @@ interface Crumb {
 
 const STATIC_PAGES: Record<string, string> = {
   '/design-system': 'Design System',
+  '/account/profile': 'My Profile',
 };
 
 export function buildCrumbs(pathname: string): Crumb[] {
@@ -41,8 +42,7 @@ export function Breadcrumbs() {
         const className = cn(
           'max-w-[220px] truncate whitespace-nowrap text-[12.5px] leading-[normal] hover:no-underline',
           last ? 'font-semibold text-tx' : 'font-normal text-tx3',
-          last && 'max-md:max-w-none',
-          !last && 'max-sm:hidden',
+          last ? 'min-w-0 max-md:max-w-none' : 'shrink-0 max-sm:hidden',
         );
         return (
           <Fragment key={`${crumb.label}-${index}`}>

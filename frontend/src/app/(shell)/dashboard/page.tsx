@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 
 import { PageContainer, PageHeader } from '@/components/ui/PageHeader';
+import { Flash } from '@/features/system/Flash';
 import { HealthPanel } from '@/features/system/HealthPanel';
 import { PlannedNotice } from '@/features/system/PlannedModule';
 import { findNavItem } from '@/lib/navigation';
@@ -12,6 +14,9 @@ const dashboard = findNavItem('dashboard');
 export default function DashboardPage() {
   return (
     <PageContainer>
+      <Suspense>
+        <Flash />
+      </Suspense>
       <PageHeader
         eyebrow="Overview"
         title="Dashboard"

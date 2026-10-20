@@ -6,9 +6,11 @@ import { useState } from 'react';
 
 import { CompactMark, Wordmark } from '@/components/brand/Wordmark';
 import { Icon } from '@/components/ui/Icon';
+import { useAuth } from '@/lib/auth/AuthProvider';
 import { cn } from '@/lib/cn';
 import { useSidebarMode } from '@/lib/preferences';
 
+import { CompanyCard } from './CompanyCard';
 import { SidebarNav } from './SidebarNav';
 
 interface SidebarProps {
@@ -20,6 +22,7 @@ interface SidebarProps {
 export function Sidebar({ open, onNavigate }: SidebarProps) {
   const pathname = usePathname();
   const { mode, toggle } = useSidebarMode();
+  const { savePreferences } = useAuth();
   const collapseLabel = mode === 'compact' ? 'Expand sidebar' : 'Collapse sidebar';
 
   return (
@@ -48,28 +51,21 @@ export function Sidebar({ open, onNavigate }: SidebarProps) {
         </span>
       </Link>
 
-      <div className="mx-3 mt-3 mb-1 flex items-center gap-2.5 border border-sb-bd bg-sb-card px-3 py-2.5 compact:hidden">
-        <div className="flex size-[30px] flex-none items-center justify-center bg-sb-h text-sb-tx2">
-          <Icon name="domain" size={17} />
-        </div>
-        <div className="flex min-w-0 flex-col">
-          <span className="truncate text-[12.5px] font-semibold text-splash-fg">
-            Company not configured
-          </span>
-          <span className="text-[10.5px] text-sb-tx2">Single-company installation</span>
-        </div>
-      </div>
+      <CompanyCard />
 
       <SidebarNavState key={pathname} pathname={pathname} onNavigate={onNavigate} />
 
       <div className="flex flex-none items-center justify-between gap-2 border-t border-sb-bd px-3 py-2.5 compact:justify-center">
         <div className="flex min-w-0 flex-col compact:hidden">
-          <span className="text-[10.5px] text-sb-tx2">MateERP 0.1.0</span>
-          <span className="text-[10px] text-sb-faint">Phase 1 · Foundation build</span>
+          <span className="text-[10.5px] text-sb-tx2">MateERP 0.2.0</span>
+          <span className="text-[10px] text-sb-faint">Phase 2 · Administration build</span>
         </div>
         <button
           type="button"
-          onClick={toggle}
+          onClick={() => {
+            toggle();
+            savePreferences({ sidebar: mode === 'compact' ? 'full' : 'compact' });
+          }}
           aria-label={collapseLabel}
           title={collapseLabel}
           data-testid="sidebar-toggle"
