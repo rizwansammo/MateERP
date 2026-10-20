@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 
 import { Badge, type Tone } from '@/components/ui/Badge';
@@ -51,6 +52,8 @@ function RequestsTable() {
     invalidate('/approvals/');
     invalidate(APPROVAL_INBOX_KEY);
     invalidate('/branding/');
+    invalidate('/accounting/');
+    invalidate('/banking/');
     toast(message);
   };
 
@@ -79,6 +82,7 @@ function RequestsTable() {
               <TR key={r.id}>
                 <TD>
                   <div className="font-medium">{r.title}</div>
+                  {r.summary.journal_id && <Link href={`/banking/journals/${r.summary.journal_id}`} className="text-[12px]">Review journal lines →</Link>}
                   {r.request_reason && <div className="text-[11.5px] text-tx3">“{r.request_reason}”</div>}
                 </TD>
                 <TD>

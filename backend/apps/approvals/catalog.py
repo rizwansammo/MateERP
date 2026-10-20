@@ -49,7 +49,7 @@ CATEGORIES: tuple[PolicyCategory, ...] = (
         "Financial adjustments",
         "Manual journals and adjustments at or above the threshold.",
         3,
-        False,
+        True,
         True,
     ),
     PolicyCategory(
@@ -66,4 +66,5 @@ BY_KEY = {c.key: c for c in CATEGORIES}
 # action code -> policy category
 ACTIONS: dict[str, str] = {
     "branding.publish": "admin_changes",
+    "accounting.post": "financial_adjustments",
 }

@@ -3,7 +3,7 @@ import { defineConfig, devices } from '@playwright/test';
 /*
  * End-to-end tests run against the production build (`npm run build` first)
  * and the real backend from Docker Compose (`docker compose up -d`). They
- * share one dev database, so they run serially.
+ * share a fresh isolated browser-test database, so they run serially.
  */
 const PORT = 3100;
 const ADMIN_STATE = 'tests/e2e/.auth/admin.json';
@@ -35,7 +35,7 @@ export default defineConfig({
   webServer: {
     command: 'npm run start',
     url: `http://localhost:${PORT}/login`,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
     timeout: 120_000,
   },
 });

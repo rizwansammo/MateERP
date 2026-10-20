@@ -1,6 +1,6 @@
 [project]
 name = "mateerp-backend"
-version = "0.2.0"
+version = "0.3.0"
 description = "MateERP backend (Django + Django REST Framework)"
 requires-python = ">=3.13"
 

@@ -92,7 +92,13 @@ def update_policy(request: HttpRequest, policy: ApprovalPolicy, data: dict) -> A
 
 
 def submit(
-    request: HttpRequest, *, action: str, title: str, payload: dict, reason: str = ""
+    request: HttpRequest,
+    *,
+    action: str,
+    title: str,
+    payload: dict,
+    reason: str = "",
+    subject_key: str = "",
 ) -> ApprovalRequest:
     """Create a pending request for an action whose policy is in force."""
     category = ACTIONS[action]
@@ -101,6 +107,7 @@ def submit(
             approval = ApprovalRequest.objects.create(
                 category=category,
                 action=action,
+                subject_key=subject_key,
                 title=title,
                 payload=payload,
                 requested_by=request.user,
@@ -125,6 +132,12 @@ def can_decide(user: User, approval: ApprovalRequest) -> tuple[bool, str]:
     """Whether ``user`` may decide ``approval`` (and why not)."""
     if approval.status != ApprovalRequest.Status.PENDING:
         return False, "This request has already been decided."
+    if approval.action == "accounting.post" and not {
+        "finance.view",
+        "accounting.approve",
+        "accounting.manage",
+    } <= get_permission_codes(user):
+        return False, "Financial approval and accounting permissions are required."
     policy = (
         ApprovalPolicy.objects.select_related("approver_role")
         .filter(category=approval.category)
@@ -166,6 +179,12 @@ def decide(
     if not approve and not reason.strip():
         raise exceptions.ValidationError({"reason": ["Give a reason for rejecting."]})
     with transaction.atomic():
+        # The accounting posting path takes the company lock before an approval row.
+        # Use that same order here so decisions and draft submissions cannot deadlock.
+        if ApprovalRequest.objects.filter(pk=approval_id, action="accounting.post").exists():
+            from apps.accounting.services.setup import lock_company
+
+            lock_company()
         approval = ApprovalRequest.objects.select_for_update().filter(pk=approval_id).first()
         if approval is None:
             raise exceptions.NotFound()

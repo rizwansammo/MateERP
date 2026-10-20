@@ -52,6 +52,26 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  backend-e2e:
+    profiles: [e2e]
+    image: mateerp-backend:dev
+    container_name: mateerp-backend-e2e
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.e2e
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-}
+      DATABASE_URL: postgres://${POSTGRES_USER:-mateerp}:${POSTGRES_PASSWORD}@db:5432/${MATEERP_E2E_DB_NAME:-mateerp_e2e_disabled}
+      DJANGO_CSRF_TRUSTED_ORIGINS: http://localhost:3100
+      PRIVATE_STORAGE_ROOT: /data/e2e/${MATEERP_E2E_DB_NAME:-mateerp_e2e_disabled}
+    command: sh -c "python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:8000 --noreload"
+    ports:
+      - "127.0.0.1:8101:8000"
+    volumes:
+      - ./backend:/app
+      - mateerp-storage:/data
+    depends_on:
+      db:
+        condition: service_healthy
+
 volumes:
   mateerp-pgdata:
     name: mateerp-pgdata

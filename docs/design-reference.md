@@ -117,6 +117,18 @@ Values below come from the prototype's `FormPanel.tsx`, `DataTable.tsx`, `Settin
 | Notifications | 410px fixed panel at top 62px / right 12px; rows padding 11/14; unread dot 7px `--ac`; 18px `--err` count badge |
 | Document viewer / branding studio | `#0A0E13` background; 54px toolbar in `#0D131B` with a `#1D2733` divider; controls 30px with `#2A3644` borders; zoom steps 50–125% |
 
+## Phase 3 — accounting and banking
+
+Inspected `lib/erp/pages-fin.ts`, `lib/erp/forms.ts` and the existing chart/table components; compared the running prototype with production screenshots. Production uses new implementation code and the established tokens/components.
+
+- The ten Banking & Accounting routes retain the shell, page padding (24/28/56), 1640px maximum content width and 18px section gaps.
+- Overview: six adjoining KPI tiles (180px minimum), paired chart panels, 230px area plot with account series/square markers, 200px donut with legends above, then recent movements. Figures and series come from posted-ledger APIs.
+- Chart: code 80px, type 100px, balance 150px and actions 90px; remaining account/group space follows the prototype's 2:1.2 proportion. Hierarchy indentation and posting/summary controls extend that layout.
+- Journals: 900px line drawer, exact debit/credit/difference footer; reversal drawer 500px. Account drawer 520px; treasury drawer 600px. Server previews and approval states are explicit.
+- Reconciliation: KPI strip, bank statement table, then unmatched-ledger table. Production adds real statement selection/setup, group selection and completion/reopening evidence within the same table/form language.
+- Statements: report tabs, exact-balance banner, filters/export in the table toolbar, indented rows and bold totals. Hierarchy subtotals are visual only; grand totals use posting accounts once.
+- Light/dark, expanded/compact and mobile captures are generated in ignored `frontend/test-results/`. Reference comparisons are retained under ignored `frontend/playwright-report/phase3-reference/`. No numerical pixel-match threshold is asserted; live values and required production controls differ from demonstration content.
+
 ## Authentication screens
 The prototype has no sign-in screen, so it extends the approved splash composition.
 - **Brand panel:** 44% wide (max 620px), `#06090D` background with a faint 64px `--sbBd` grid. Tagline 11px at `.42em`; wordmark 56px; 220×2px track with a 30% cyan bar; "A NetaMate product" 11px.

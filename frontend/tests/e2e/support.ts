@@ -20,7 +20,7 @@ export function strongPassword(): string {
 /** Run a command in the mateerp backend container. */
 export function backend(args: string[], env: Record<string, string> = {}): string {
   const envArgs = Object.entries(env).flatMap(([k, v]) => ['-e', `${k}=${v}`]);
-  return execFileSync('docker', ['compose', 'exec', '-T', ...envArgs, 'backend', ...args], {
+  return execFileSync('docker', ['compose', 'exec', '-T', ...envArgs, process.env.MATEERP_TEST_SERVICE ?? 'backend-e2e', ...args], {
     cwd: REPO_ROOT,
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],

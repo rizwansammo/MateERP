@@ -46,6 +46,8 @@ PERMISSIONS: tuple[PermissionDef, ...] = (
     # Finance
     PermissionDef("finance.view", "View financial records", "finance"),
     PermissionDef("accounting.manage", "Manage accounting", "finance"),
+    PermissionDef("accounting.approve", "Approve financial adjustments", "finance"),
+    PermissionDef("accounting.periods.manage", "Close and reopen accounting periods", "finance"),
     PermissionDef("invoices.create", "Create invoices", "finance"),
     PermissionDef("payments.approve", "Approve payments", "finance"),
     PermissionDef("expenses.manage", "Manage expenses", "finance"),
@@ -78,6 +80,8 @@ class RoleDef:
 
 
 _FINANCE_MANAGER = ALL_CODES - {
+    "accounting.approve",
+    "accounting.periods.manage",
     "users.manage",
     "roles.manage",
     "permissions.manage",

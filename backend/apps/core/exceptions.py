@@ -14,6 +14,8 @@ from typing import Any
 
 from django.conf import settings
 from django.core.exceptions import PermissionDenied as DjangoPermissionDenied
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db import IntegrityError
 from django.http import Http404
 from rest_framework import exceptions, status
 from rest_framework.response import Response
@@ -48,6 +50,14 @@ def error_payload(code: str, message: str, details: Any = None) -> dict[str, Any
 
 
 def api_exception_handler(exc: Exception, context: dict[str, Any]) -> Response | None:
+    if isinstance(exc, DjangoValidationError):
+        exc = exceptions.ValidationError(
+            exc.message_dict if hasattr(exc, "message_dict") else exc.messages
+        )
+    elif isinstance(exc, IntegrityError):
+        exc = BusinessRuleViolation(
+            "The change violates a record integrity rule.", code="integrity_conflict"
+        )
     if isinstance(exc, Http404):
         exc = exceptions.NotFound()
     elif isinstance(exc, DjangoPermissionDenied):

@@ -48,16 +48,16 @@ test.describe('application shell', () => {
     await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(237, 240, 244)');
   });
 
-  test('navigating to a planned module states its phase honestly', async ({ page }) => {
+  test('accounting navigation opens working Phase 3 pages', async ({ page }) => {
     await page.goto('/dashboard');
     await page.getByRole('link', { name: /banking & accounting/i }).click();
     await expect(page).toHaveURL(/\/banking\/overview$/);
-    await expect(page.getByTestId('planned-notice')).toContainText('Phase 3');
+    await expect(page.getByRole('heading', { level: 1, name: 'Banking & accounting overview' })).toBeVisible();
     await expect(page.getByRole('navigation', { name: 'Breadcrumb' })).toContainText('Banking & Accounting');
 
     await page.getByRole('link', { name: 'Journal Entries' }).click();
     await expect(page).toHaveURL(/\/banking\/journals$/);
-    await expect(page.getByRole('heading', { level: 1, name: 'Journal Entries' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Journal entries' })).toBeVisible();
   });
 
   test('unknown routes return 404', async ({ page }) => {
@@ -99,6 +99,6 @@ test.describe('backend integration', () => {
     const stats = page.getByTestId('health-stats');
     await expect(stats).toContainText('Operational');
     await expect(stats).toContainText('Connected');
-    await expect(stats).toContainText('0.2.0');
+    await expect(stats).toContainText('0.3.0');
   });
 });

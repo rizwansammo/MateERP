@@ -4,7 +4,7 @@
  * modules above CURRENT_PHASE are shown as planned, never as working features.
  */
 
-export const CURRENT_PHASE = 2;
+export const CURRENT_PHASE = 3;
 
 export const PHASES: Record<number, string> = {
   1: 'Project Foundation',

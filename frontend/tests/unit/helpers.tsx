@@ -10,6 +10,7 @@ export const ALL_PERMISSIONS = [
   'expenses.manage', 'banking.evidence.view', 'reports.export', 'founder.view', 'founder.transactions.manage',
   'founder.settlements.manage', 'ownership.manage', 'procurement.manage', 'inventory.manage', 'assets.manage',
   'budgets.manage',
+  'accounting.approve', 'accounting.periods.manage',
 ];
 
 export function makeUser(overrides: Partial<CurrentUser> = {}): CurrentUser {

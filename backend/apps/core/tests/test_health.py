@@ -16,7 +16,7 @@ def test_health_reports_ok_with_live_database(api_client):
     body = response.json()
     assert body["status"] == "ok"
     assert body["service"] == "mateerp-backend"
-    assert body["version"] == "0.2.0"
+    assert body["version"] == "0.3.0"
     assert body["environment"] == "test"
     assert body["checks"]["database"]["status"] == "ok"
     assert body["checks"]["database"]["latency_ms"] >= 0

@@ -31,6 +31,8 @@ MateERP is NetaMate's commercial ERP. This repository is the **production applic
   - `branding`: draft and immutable versions
   - `approvals`: policies, requests, executors
   - `audit`: append-only events
+  - `accounting`: account hierarchy, periods, immutable posted journals, posting identities, rates, tax mappings, reports
+  - `banking`: cash/bank metadata, treasury adapters, statements and reconciliation; no separate ledger
 - Business rules live in `services/`; views and serializers stay thin; multi-row changes use `transaction.atomic()`.
 - **Frontend:** Next.js App Router + strict TypeScript + Tailwind v4.
   - The browser only calls `/api/v1/*` on its own origin; Next proxies it to Django.
@@ -48,17 +50,21 @@ MateERP is NetaMate's commercial ERP. This repository is the **production applic
 - **Private files:** go through `apps.files.services.store_image` (content validation and re-encoding) and are read only via `GET files/<id>/content/`. Access is checked by `apps.files.access.can_read` (purpose- and reference-based, default deny, 404 when hidden). New file purposes need an explicit policy.
 - **Audit:** use `apps.audit.services.record()`. Never pass passwords, tokens or temporary credentials. `before`/`after` values are redacted anyway. Audit events and published branding versions are append-only at the DB level (triggers).
 - **Approvals:** domain actions call `approvals.services.approval_required()` and `submit()`. Approved requests run the executor registered with `register_executor()`, inside the same transaction.
-- **Financial history guard:** `company.services.financial_history_exists()` is always False until Phase 3. Phase 3 must implement it so base currency and fiscal year become locked.
+- **Financial history guard:** `company.services.financial_history_exists()` queries posted journals. Base currency and fiscal start lock after posting; existing fiscal structures also prevent an implicit fiscal-calendar change.
 
 ## Financial integrity rules (Phase 3 onward)
 - One accounting engine is the single authoritative posting system. No parallel ledgers.
+- Use `apps.accounting.services.posting.post_journal()` for domain adapters; never insert a posted journal or write balances. See `docs/accounting-contract.md` for the exact contract and invariants.
+- Acquire the company financial lock before settings, approval, journal, period, account and reconciliation locks. Financial writes are atomic. PostgreSQL guards independently enforce posted immutability, balance and period/hierarchy integrity.
+- Amounts use NUMERIC(24,6), rates NUMERIC(30,12), actual currency minor units and ROUND_HALF_UP conversion. Rate direction is base units per foreign unit. Foreign bank outflows use historical weighted-average carrying value; chronological posting and sufficient units are required.
+- Manual/opening/adjustment/reversal policies freeze snapshots. Approvers need `accounting.approve` + `accounting.manage` + `finance.view`; close/reopen additionally needs `accounting.periods.manage`. New sensitive codes are not silently granted to existing non-admin roles.
 - Money: `Decimal` / `NUMERIC` only, never float. The API returns decimals as strings; the frontend formats integer minor units.
 - Posted journals balance, are never silently edited, and are corrected only by traceable reversals or adjustments.
 - Periods lock. Financial actions are idempotent. Founder personal settlements stay outside company obligations.
 - Issued invoices and receipts reference the `BrandingVersion` they were issued with (`features/documents/*` render them).
 
 ## Roadmap
-1. Foundation ✅ · 2. Auth & Administration ✅ · 3. Core Accounting Engine · 4. Billing, Expenses & Documents · 5. Founder Finance & Ownership · 6. Operations & Reporting · 7. Security, Final Testing & Release.
+1. Foundation ✅ · 2. Auth & Administration ✅ · 3. Core Accounting Engine implemented (acceptance report in docs) · 4. Billing, Expenses & Documents · 5. Founder Finance & Ownership · 6. Operations & Reporting · 7. Security, Final Testing & Release.
 
 Work on one phase at a time and stop for user review at the end of each phase.
 
@@ -67,6 +73,7 @@ Work on one phase at a time and stop for user review at the end of each phase.
   - Containers `mateerp-db` and `mateerp-backend`; volumes `mateerp-pgdata` and `mateerp-storage`.
   - Loopback ports: DB 55432, API 8100. The frontend runs natively on 3100.
   - Never touch other projects' containers.
+  - Optional `e2e` profile: `mateerp-backend-e2e` on loopback 8101, using a fresh `mateerp_e2e_<uuid>` database in the same PostgreSQL server. Never aim browser fixtures at the development database. Run `scripts/e2e.ps1`; keep port 3100 available.
 - **No destructive operations:** never `docker compose down -v`, volume removal, DB drop or flush. pytest uses its own `test_mateerp` DB.
 - **First administrator:** `docker compose exec backend python manage.py create_admin`
 - **All checks:** `powershell -ExecutionPolicy Bypass -File scripts\verify.ps1`. See `docs/development.md`.
@@ -74,5 +81,5 @@ Work on one phase at a time and stop for user review at the end of each phase.
 ## Testing expectations
 - Every change ships with tests.
   - Backend: pytest against real PostgreSQL in the container.
-  - Frontend: Vitest, plus Playwright end-to-end tests against the live stack at `localhost:3100`. The e2e global setup manages `e2e-*` accounts and clears sign-in throttling.
+  - Frontend: Vitest and Playwright through `localhost:3100` against an isolated per-run backend/database. The guarded e2e setup changes only test accounts and test settings. Each run retains its database and files for inspection; it never resets development data.
 - Never claim a check passed without running it.

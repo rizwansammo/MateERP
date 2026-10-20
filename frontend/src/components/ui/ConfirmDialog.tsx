@@ -82,7 +82,7 @@ export function ConfirmDialog({
         {children}
         {reason && (
           <Field label={reasonLabel} htmlFor="confirm-reason" required={reason === 'required'}>
-            <Textarea id="confirm-reason" rows={3} maxLength={500} value={text} onChange={(e) => setText(e.target.value)} />
+            <Textarea id="confirm-reason" aria-label={reasonLabel} rows={3} maxLength={500} value={text} onChange={(e) => setText(e.target.value)} />
           </Field>
         )}
       </div>

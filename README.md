@@ -2,7 +2,7 @@
 
 MateERP is NetaMate's enterprise resource planning application. It runs as a single-company installation covering finance, billing, purchasing, accounting, founder finance, operations and documents.
 
-**Status:** Phase 2 (authentication and administration) is complete. The accounting engine is next (Phase 3). See [docs/architecture.md](docs/architecture.md#roadmap).
+**Status:** Phase 3 adds the core accounting engine, banking, reconciliation and financial reports. Billing and financial document issuance remain Phase 4. See [Phase 3 report](docs/phase-03-summary.md).
 
 | Layer | Technology |
 |---|---|
@@ -26,6 +26,8 @@ npm run dev                              # http://localhost:3100 → sign in
 
 There are no default credentials. After signing in, set up the company in **Settings → Company Profile**, then branding in **Settings → Invoice & Receipt Branding**.
 
+For accounting, explicitly set up a chart in **Banking & Accounting → Chart of Accounts**, create a fiscal year in **Accounting Periods**, link bank/cash accounts to their GL accounts, then enter a balanced **Journals → Opening balances** draft. Migrations never seed balances or transactions. [Posting rules and future module contract](docs/accounting-contract.md).
+
 | What | Where |
 |---|---|
 | App | http://localhost:3100 |
@@ -39,6 +41,7 @@ Run every check: `powershell -ExecutionPolicy Bypass -File scripts\verify.ps1`
 - [Architecture](docs/architecture.md): structure, security model, domain boundaries, financial integrity rules
 - [Design reference](docs/design-reference.md): design tokens, components and document templates from the approved prototype
 - [Phase 1 summary](docs/phase-01-summary.md) · [Phase 2 summary](docs/phase-02-summary.md)
+- [Phase 3 summary](docs/phase-03-summary.md) · [Accounting contract](docs/accounting-contract.md)
 - [CLAUDE.md](CLAUDE.md): project conventions for AI-assisted development
 
 ## Repository layout

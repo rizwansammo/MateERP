@@ -42,11 +42,12 @@ HISTORY_SENSITIVE_FIELDS = ("base_currency", "fiscal_year_start_month")
 def financial_history_exists() -> bool:
     """Whether posted financial records exist.
 
-    Always False until the accounting engine (Phase 3) exists; Phase 3 must
-    replace this with a real check (e.g. any posted journal), after which
-    base currency and fiscal year start become locked.
+    Called while holding the company row lock, shared with first posting.
+    Drafts and approval requests do not constitute posted financial history.
     """
-    return False
+    from apps.accounting.models import JournalEntry
+
+    return JournalEntry.objects.filter(status="posted").exists()
 
 
 # --- Company profile -------------------------------------------------------------
@@ -99,6 +100,18 @@ def update_company(request: HttpRequest, data: dict) -> CompanyProfile:
                 "Base currency and fiscal year start cannot change once financial records exist.",
                 code="financial_history_locked",
             )
+
+    from apps.accounting.models import FiscalYear
+
+    if (
+        "fiscal_year_start_month" in data
+        and data["fiscal_year_start_month"] != company.fiscal_year_start_month
+        and FiscalYear.objects.exists()
+    ):
+        raise BusinessRuleViolation(
+            "Fiscal years already exist with the current boundaries.",
+            code="fiscal_structure_exists",
+        )
 
     for field, value in data.items():
         if field in PROFILE_FIELDS:
@@ -249,6 +262,8 @@ def _settings_snapshot(obj: BusinessSettings) -> dict:
 
 @transaction.atomic
 def update_business_settings(request: HttpRequest, data: dict) -> BusinessSettings:
+    # Same lock order as posting: company, business settings, financial records.
+    CompanyProfile.objects.select_for_update().filter(pk=SINGLETON_ID).first()
     obj = get_business_settings()
     obj = BusinessSettings.objects.select_for_update().get(pk=obj.pk)
     obj.numbering = {**DEFAULT_NUMBERING, **(obj.numbering or {})}

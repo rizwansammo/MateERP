@@ -76,19 +76,31 @@ Requests to `/api/*` are proxied to `MATEERP_BACKEND_URL` (default `http://127.0
 | Frontend unit tests | `cd frontend; npm test` |
 | Frontend lint / types | `npm run lint` · `npm run typecheck` |
 | Production build | `npm run build` |
-| E2E tests | `npx playwright install chromium` (once), then `npm run build; npm run test:e2e` (backend must be running) |
+| E2E tests | `npx playwright install chromium` (once), then `npm run test:e2e` (builds automatically; backend must be running and port 3100 available) |
 | **Everything** | `powershell -ExecutionPolicy Bypass -File scripts\verify.ps1` |
 | Stop stack | `docker compose down` (data kept) |
 
-`docker compose down -v` **deletes the MateERP database and file-storage volumes**. Use it only when you really want a clean installation.
+Never use `docker compose down -v`, volume removal, database drop or flush during development or verification. Preserve development data.
 
 ## About the end-to-end tests
-- The tests run against your local stack and create data through the app: users prefixed `e2e-`, custom roles named `E2E …`, branding versions and audit events. That data is left in place; nothing is deleted.
-- **Before each run**, the global setup:
-  - resets the `e2e-admin` account with a fresh random password (never written to disk)
-  - clears sign-in throttling (in dev, every browser shares the Docker gateway address)
-  - resets the branding approval rule and module toggles
-- **Company profile:** the tests reuse an existing company profile or create one called "NetaMate".
+- `scripts/e2e.ps1` creates a new `mateerp_e2e_<uuid>` PostgreSQL database, using the existing MateERP database server. It starts only the optional `mateerp-backend-e2e` container on loopback 8101 and builds the frontend proxy against it. The browser still uses the real origin `http://localhost:3100`, session cookies and CSRF.
+- `config.settings.e2e` rejects database names without the isolated prefix; global setup refuses to run against development settings. Test account, company, branding, accounting and approval fixtures never touch the development database.
+- The script stops only the test backend after the run. Its database is retained, with private files at `mateerp-storage:/e2e/<database-name>/`. Run names appear in the output. No automatic deletion is performed. Retained databases consume disk; review them deliberately before any separately authorized cleanup.
+- The Playwright state file under `frontend/tests/e2e/.auth/`, screenshots and traces under `frontend/test-results/` are gitignored. Passwords are random per run and not written to source or logs.
+- Close your own frontend on 3100 before tests; the runner refuses to adopt an existing server. Focused run from the root: `powershell -ExecutionPolicy Bypass -File scripts/e2e.ps1 -TestFile phase3.spec.ts`.
+- After browser tests, `npm run dev` uses the normal 8100 backend. A production test build retains the 8101 rewrite: rebuild with the normal `MATEERP_BACKEND_URL` before using `npm run start` for development.
+- `npm run dev` and `npm run build` explicitly select Next.js's supported Webpack bundler. On this Windows environment Turbopack's CSS worker exited unexpectedly, including outside the sandbox; Webpack builds and type validation succeed. No framework downgrade or validation bypass is used.
+
+## First accounting setup
+
+1. Confirm the company base currency and fiscal start before posting. They become locked by history.
+2. Use Chart of Accounts → Set up starter chart (explicit preview) or create your own hierarchy. Configure postable FX gain/loss and retained-earnings controls as needed.
+3. Create a fiscal year in Accounting Periods; its twelve months are generated from the company's fiscal start.
+4. Create bank/cash metadata and link distinct postable asset GL accounts before loading their opening balances.
+5. Enter a balanced opening journal at the chosen migration date, with every equity/earnings offset visible. Approval rules apply. There is only one initial opening source; subsequent corrections use linked reversals/adjustments.
+6. Foreign currencies need enabled currency settings and an applicable exchange-rate revision. Treasury previews show explicit FX differences; a changed quote requires a fresh preview.
+
+See [accounting-contract.md](accounting-contract.md) for posting, approval, period, reconciliation and history rules. Phase 3 does not issue invoices, receipts or tax filings.
 
 ## Editor support (optional)
 Python dependencies live in the container. For IntelliSense, create a local venv (includes `django-stubs` and `djangorestframework-stubs`):
@@ -106,4 +118,4 @@ Then select `backend\.venv` as the interpreter. `pyproject.toml` points Pyrefly 
 - **"Too many sign-in attempts":** wait for the shown delay, or run `clear_login_locks`.
 - **"Security check failed" on a form:** the CSRF cookie was rotated (e.g. after signing in elsewhere). The client retries once automatically; reload if it persists.
 - **Signed in on another port or host:** add the origin to `DJANGO_CSRF_TRUSTED_ORIGINS` in `.env`.
-- **Changed `.env` credentials after the first start:** the database volume keeps the original password. Either revert the change or recreate the volume (destroys local data).
+- **Changed `.env` credentials after the first start:** the database volume keeps the original password. Restore the matching local configuration or arrange a deliberate credential rotation; do not recreate the data volume.

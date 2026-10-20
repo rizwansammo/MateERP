@@ -102,6 +102,8 @@ class ApprovalRequestSerializer(serializers.ModelSerializer):
     def get_summary(self, obj) -> dict:
         # Only non-sensitive descriptive fields of the captured payload.
         payload = obj.payload or {}
+        if obj.action == "accounting.post":
+            return {"journal_id": payload.get("journal_id", "")}
         return {k: payload[k] for k in ("label", "template", "receipt_template") if k in payload}
 
 

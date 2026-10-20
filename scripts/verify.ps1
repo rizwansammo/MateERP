@@ -34,7 +34,7 @@ try {
         Step 'Frontend: unit tests' { npm test }
         Step 'Frontend: production build' { npm run build }
         if (-not $SkipE2E) {
-            Step 'Frontend: e2e against live backend' { npx playwright test }
+            Step 'Frontend: e2e against isolated backend' { powershell -ExecutionPolicy Bypass -File ../scripts/e2e.ps1 }
         }
     } finally {
         Pop-Location

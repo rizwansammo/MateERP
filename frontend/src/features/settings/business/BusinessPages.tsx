@@ -27,6 +27,7 @@ import { formatMinor } from '@/features/documents/money';
 import { renderNumber } from '@/features/documents/numbering';
 
 import { Gate } from '../Gate';
+import { RatesPanel } from '@/features/accounting/PeriodsTaxFx';
 import { NUMBERING_LABELS, NumberingDrawer } from '../NumberingDrawer';
 
 const READERS = ['company.view', 'company.edit', 'branding.manage'];
@@ -86,7 +87,7 @@ function FinancialContent() {
         actions={co && can('company.edit') ? <Button variant="primary" icon="edit" onClick={() => setEditing(true)}>Edit financial defaults</Button> : null}
       />
       <Banner tone="info">
-        Accounting periods, the general ledger and posting rules arrive with the accounting engine (Phase 3). Once financial records exist, base
+        Accounting periods and the general ledger enforce posting rules. Once financial records exist, base
         currency and fiscal year start are locked so history is never rewritten.
       </Banner>
       {co === null && <NoCompany />}
@@ -208,6 +209,7 @@ function CurrencyForm({ settings, base, currencies, editable, onSaved }: {
       form.reset({ enabled_currencies: saved.enabled_currencies, currency_display: saved.currency_display, number_grouping: saved.number_grouping });
       onSaved(saved);
       toast('Currency settings saved');
+      invalidate('/accounting/');
     } catch (err) {
       setError(form.applyError(err));
     } finally {
@@ -218,7 +220,7 @@ function CurrencyForm({ settings, base, currencies, editable, onSaved }: {
   return (
     <PageContainer>
       <PageHeader eyebrow="Settings" title="Currency settings" description="Base currency, the currencies documents may be issued in, and how amounts are displayed." />
-      <Banner tone="info">Exchange rates and multi-currency conversion arrive with the accounting engine (Phase 3). No rates are applied yet.</Banner>
+      <Banner tone="info">Posted journals preserve their rate snapshots. Changes to rates apply only to new postings.</Banner>
       {base === null && <NoCompany />}
       {error && <Banner tone="err">{error}</Banner>}
       <Panel>
@@ -259,6 +261,7 @@ function CurrencyForm({ settings, base, currencies, editable, onSaved }: {
           <Button variant="primary" onClick={() => void save()} disabled={!form.dirty || busy}>{busy ? 'Saving…' : 'Save currency settings'}</Button>
         </div>
       )}
+      <RatesPanel />
     </PageContainer>
   );
 }
@@ -309,7 +312,7 @@ function TaxForm({ settings, taxId, editable, onSaved }: { settings: BusinessSet
   return (
     <PageContainer>
       <PageHeader eyebrow="Settings" title="Tax settings" description="Tax identification and defaults that future invoices and bills will use." />
-      <Banner tone="info">Stored configuration only. Tax calculation, returns and filing arrive with the accounting and billing modules (Phases 3–4).</Banner>
+      <Banner tone="info">Document tax defaults. Ledger tax mappings and manual adjustments are available in Banking & Accounting → Tax Management. Billing calculations arrive in Phase 4; tax filing is not provided.</Banner>
       {error && <Banner tone="err">{error}</Banner>}
       <InfoPanels>
         <InfoPanel title="Identification" rows={[

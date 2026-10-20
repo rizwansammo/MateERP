@@ -18,7 +18,7 @@ _ENV_FILE = BASE_DIR.parent / ".env"
 if _ENV_FILE.is_file():
     environ.Env.read_env(_ENV_FILE)
 
-MATEERP_VERSION = "0.2.0"
+MATEERP_VERSION = "0.3.0"
 MATEERP_ENVIRONMENT = "base"
 
 SECRET_KEY = env("DJANGO_SECRET_KEY", default="")
@@ -40,6 +40,8 @@ INSTALLED_APPS = [
     "apps.company",
     "apps.approvals",
     "apps.branding",
+    "apps.accounting",
+    "apps.banking",
 ]
 
 MIDDLEWARE = [

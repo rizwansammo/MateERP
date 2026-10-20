@@ -1,19 +1,19 @@
 {
   "name": "mateerp-frontend",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "engines": {
     "node": ">=22.12"
   },
   "scripts": {
-    "dev": "next dev --port 3100",
-    "build": "next build",
+    "dev": "next dev --webpack --port 3100",
+    "build": "next build --webpack",
     "start": "next start --port 3100",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "powershell -ExecutionPolicy Bypass -File ../scripts/e2e.ps1"
   },
   "dependencies": {
     "material-symbols": "0.48.0",

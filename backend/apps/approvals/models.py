@@ -52,6 +52,7 @@ class ApprovalRequest(models.Model):
 
     category = models.CharField(max_length=32)
     action = models.CharField(max_length=64)
+    subject_key = models.CharField(max_length=100, default="", blank=True)
     title = models.CharField(max_length=200)
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.PENDING)
     payload = models.JSONField(default=dict)
@@ -83,7 +84,9 @@ class ApprovalRequest(models.Model):
                 name="approval_status_consistent",
             ),
             models.UniqueConstraint(
-                fields=["action"], condition=Q(status="pending"), name="one_pending_per_action"
+                fields=["action", "subject_key"],
+                condition=Q(status="pending"),
+                name="one_pending_per_subject",
             ),
         ]
         indexes = [models.Index(fields=["status", "-requested_at"], name="approval_status_idx")]

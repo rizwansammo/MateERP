@@ -140,6 +140,7 @@ test('D — custom role permissions are enforced server-side and change live', a
   await page.getByRole('switch', { name: `View company settings for ${roleName}` }).click();
   await page.getByRole('button', { name: 'Save changes' }).click();
   await expect(page.getByRole('switch', { name: `View audit logs for ${roleName}` })).toHaveAttribute('aria-checked', 'true');
+  await expect(page.getByRole('region', { name: 'Unsaved permission changes' })).toHaveCount(0);
 
   const username = `e2e-auditor-${RUN}`;
   const temp = await createUserViaUi(page, username, `${roleName} (custom)`);
@@ -161,6 +162,8 @@ test('D — custom role permissions are enforced server-side and change live', a
   await page.getByRole('switch', { name: `View audit logs for ${roleName}` }).click();
   await page.getByRole('button', { name: 'Save changes' }).click();
   await expect(page.getByRole('switch', { name: `View audit logs for ${roleName}` })).toHaveAttribute('aria-checked', 'false');
+  // Switches reflect the local draft; wait for persistence before checking another session.
+  await expect(page.getByRole('region', { name: 'Unsaved permission changes' })).toHaveCount(0);
   expect((await userPage.request.get('/api/v1/audit/events/')).status()).toBe(403);
   await userPage.reload();
   await expect(userPage.getByText('Access restricted')).toBeVisible();

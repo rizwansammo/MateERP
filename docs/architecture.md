@@ -30,6 +30,8 @@ Browser ──> Next.js (frontend, :3100) ──/api/*──> Django + DRF (back
 | `apps/branding` | `BrandingDraft` (editable) and `BrandingVersion` (immutable, numbered); publish and restore |
 | `apps/approvals` | `ApprovalPolicy` per category, `ApprovalRequest` with a payload snapshot; executor registry |
 | `apps/audit` | `AuditEvent`, append-only; `record()` with redaction |
+| `apps/accounting` | Account hierarchy, fiscal years/periods, journal posting/reversal/approval, idempotency, rate history, tax mappings and posted-ledger reports |
+| `apps/banking` | Bank/cash metadata linked to GL accounts, treasury adapters, bank statements, exact match groups and reconciliation evidence; no independent ledger |
 
 **Conventions for domain apps**
 - Shape: `models.py`, `services/` (business rules and transactions), `api/` (thin views and serializers), `tests/`.
@@ -70,7 +72,7 @@ Sliding windows over `LoginFailure` rows; no Redis:
 - Recovery: automatic expiry, `manage.py clear_login_locks`, and an administrator's password reset (which clears that user's failures).
 
 ### Authorisation
-- **Permission codes:** 23 stable codes in `apps/accounts/catalog.py` (administration, finance, founder, operations), synced after every migrate. Default roles: Administrator (locked; always every permission), Finance Manager, Accountant, Operations Manager, Viewer. Custom roles are supported.
+- **Permission codes:** stable codes in `apps/accounts/catalog.py` (administration, finance, founder, operations), synced after every migrate. Phase 3 adds `accounting.approve` and `accounting.periods.manage`; existing non-admin/custom grants are preserved. Default roles: Administrator (locked; always every permission), Finance Manager, Accountant, Operations Manager, Viewer.
 - **Evaluation:** permissions are read from the database on every request, so role and permission changes take effect immediately. Nothing is cached in the session or trusted from the client.
 - **Anti-escalation:**
   - You can only grant or revoke permissions you hold, and only assign roles whose permissions you hold.
@@ -111,8 +113,8 @@ Sliding windows over `LoginFailure` rows; no Redis:
 ## Approvals
 - One `ApprovalPolicy` per category: sensitive administrative changes, expenses, purchase orders, client payments, financial adjustments, ownership changes.
 - Each policy has: required/active flags, a designated approver role, an optional amount threshold, a self-approval flag and notes.
-- **Enforced now:** *sensitive administrative changes* (branding publication). When active, publishing creates an `ApprovalRequest` with the exact payload. Approval runs the registered executor in the same transaction; rejection needs a reason.
-- **Rules:** one pending request per action, enforced by a partial unique index. Status consistency is enforced by a check constraint.
+- **Enforced now:** branding publication and financial adjustments (manual/opening/adjustment journals, bank adjustments and reversals). Internal bank transfers cannot inject arbitrary adjustment lines and use their own posting source. Thresholds use total base debit once. Exact financial snapshots are frozen and verified again by the executor; approval and posting commit together.
+- **Rules:** one pending request per `(action, subject_key)`, enforced by a partial unique index. Branding keeps its empty singleton subject; different journals may await approval together. Financial approvers need finance read, accounting management and financial approval permissions as well as designated-role/self-approval checks. Status consistency is enforced by a check constraint.
 - **Other categories:** stored now; their modules enforce them when they ship. The UI states this honestly.
 
 ## Modules and settings
@@ -120,7 +122,7 @@ Sliding windows over `LoginFailure` rows; no Redis:
   - `ModuleSetting` is the server-side source of truth (`company.services.is_module_enabled`).
   - Disabled modules are hidden from navigation and never deleted.
   - Enabled-but-unbuilt modules stay labelled "Planned · Phase N".
-- **Currency and tax** settings are stored configuration only (no exchange rates or tax calculation until Phases 3–4). Base currency and fiscal-year start go through `financial_history_exists()`, which Phase 3 must implement to lock them once records exist.
+- **Currency and tax:** effective-dated FX and tax-account revisions exist in Phase 3. Posted lines retain snapshots. Billing tax calculation is Phase 4; tax filing is outside scope. `financial_history_exists()` queries posted journals; the service and PostgreSQL both lock company base currency/fiscal start after posting.
 - **Number formats:** tokens `{YYYY} {YY} {MM} {###…}`, exactly one sequence token, and a distinct letter prefix per document type. Sequential issuance arrives with each document module.
 
 ## Frontend (`frontend/src/`)
@@ -134,29 +136,30 @@ Sliding windows over `LoginFailure` rows; no Redis:
 | `features/auth` | Sign-in and password screens |
 | `features/settings/*` | Company, branding (overview, studio, version viewer), users and roles, permissions, approvals, modules, financial/currency/tax, audit, preferences, about |
 | `features/documents/*` | Invoice and receipt templates, SVG company seal, integer-minor-unit money helpers |
+| `features/accounting/*` | Ten accounting/banking screens, exact BigInt money helpers, journal/opening editors, treasury preview, reconciliation, rates/tax/period controls and reports |
 
 Personal preferences (theme, sidebar, rows per page, landing page) are stored on the user and mirrored to the pre-paint localStorage cache, so first paint never flashes.
 
-## Domain boundaries (planned)
+## Domain boundaries
 
 | Domain app | Phase | Owns |
 |---|---|---|
-| `accounting` | 3 | Chart of accounts, journals and lines, periods and locks, currencies and FX rates, taxes, bank accounts, reconciliation |
+| `accounting`, `banking` | 3 (implemented) | Central journals and reports; bank/cash adapters and reconciliation |
 | `sales`, `purchasing`, `documents` | 4 | Customers, invoices, payments, receipts, credit notes; vendors, bills, expenses, POs; document storage |
 | `founders`, `ownership` | 5 | Contributions, founder-paid expenses, sharing policies, settlements, loans; shareholders, capital, transfers |
 | `inventory`, `assets`, `budgeting`, `catalog`, `reporting` | 6 | Stock, valuation, fixed assets, depreciation, budgets, cost centres, catalogue, statements |
 
-### Financial integrity design (Phase 3 foundation)
-1. **One posting engine.** Other domains call `accounting.services.post(...)` with a source reference. Journals link back to their sources.
-2. **Balanced by construction.** Debits equal credits per journal and currency, checked in the service and backed by the database.
-3. **Immutability.** Posted journals are append-only (reuse `mateerp_forbid_modification`). Corrections are reversals or adjustments.
-4. **Periods.** Locked periods reject postings.
-5. **Idempotency.** `Idempotency-Key` headers and unique posting keys.
-6. **Transactions.** `transaction.atomic()` plus `select_for_update` where balances are read and updated.
-7. **Exact money.** `NUMERIC(20,4)`, `Decimal`, explicit per-currency rounding. Never float.
-8. **Reconciliation.** Explicit match records with user and timestamp.
-9. **Founder finance.** Personal settlements stay outside the company ledger.
-10. **Documents.** Issued documents reference their `BrandingVersion` and use stable numbers.
+### Financial integrity (Phase 3)
+
+The implemented contract and database invariants are documented in [accounting-contract.md](accounting-contract.md). All financial writes acquire the company-row mutex first, then domain locks, inside a database transaction. This deliberately simple single-instance strategy serializes financial changes; it is an explicit throughput tradeoff, not an application-side balance cache.
+
+`post_journal()` is the internal domain adapter entry point; `post_draft()` is the reviewed draft workflow. Public requests carry a `posting_key` JSON field and cannot set trusted source identities. Unique keys, source actions, reversal targets and journal numbers prevent duplicates. Draft revisions reject stale edits. Posted journal headers and lines are immutable; a deferred PostgreSQL trigger requires at least two lines and exact equality of **base-currency** debits and credits. Native amounts need valid minor units, but cross-currency entries need not balance separately in each native currency.
+
+Amounts use `NUMERIC(24,6)`, rates `NUMERIC(30,12)`, Python Decimal and explicit ROUND_HALF_UP conversion. Frontend amounts remain strings and BigInt minor units. Foreign bank credits remove weighted-average historical book value; disclosed realized differences use configured FX gain/loss controls. Unvalued foreign overdrafts and backdated foreign movements are rejected. Exact reversals retain original native/base values and rates.
+
+PostgreSQL independently guards period containment/overlap, closing, financial history, hierarchy meaning, statement completion and consumed reconciliation memberships. Reports include posted entries only. Running ledger balances are SQL-windowed before search/page slicing; multi-query statement reports hold the financial mutex for a coherent snapshot. Hierarchy rows are display subtotals, excluded from grand-total arithmetic.
+
+Founder personal settlements remain outside company obligations. Future financial documents reference immutable branding versions and use this posting engine. No Phase 4 document issuance is included here.
 
 ## Key decisions
 
@@ -176,7 +179,7 @@ Personal preferences (theme, sidebar, rows per page, landing page) are stored on
 ## Roadmap
 1. **Project foundation:** complete
 2. **Authentication and administration:** complete
-3. Core accounting engine
+3. **Core accounting engine:** implemented; see Phase 3 acceptance report
 4. Billing, expenses and documents
 5. Founder finance and ownership
 6. Business operations and reporting
