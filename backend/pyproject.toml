@@ -1,0 +1,24 @@
+[project]
+name = "mateerp-backend"
+version = "0.1.0"
+description = "MateERP backend (Django + Django REST Framework)"
+requires-python = ">=3.13"
+
+[tool.pytest.ini_options]
+# --ds takes precedence over a DJANGO_SETTINGS_MODULE set in the environment
+# (the dev container sets one), so tests always use the test settings.
+python_files = ["test_*.py"]
+addopts = "-ra --strict-markers --ds=config.settings.test"
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+extend-exclude = ["**/migrations/*"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "DJ", "SIM", "S"]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["S101", "S105", "S603"]
+"config/settings/dev.py" = ["S105"]
+"config/settings/test.py" = ["S105"]

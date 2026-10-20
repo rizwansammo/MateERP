@@ -1,0 +1,123 @@
+/*
+ * MateERP design tokens — authoritative values from the approved MateERP-UI
+ * prototype (see docs/design-reference.md). Do not change values here without
+ * updating that document.
+ *
+ * Light theme on :root, dark theme on [data-theme='dark']. The sidebar (--sb*)
+ * is dark in both themes.
+ */
+:root {
+  /* Surfaces */
+  --bg: #edf0f4;
+  --sf: #ffffff;
+  --sf2: #f6f8fa;
+  --sf3: #ebeff4;
+  --sfH: #f4f7fa;
+  --inp: #ffffff;
+  --hd: #ffffff;
+
+  /* Borders */
+  --bd: #dfe4ea;
+  --bd2: #c9d1db;
+
+  /* Text */
+  --tx: #0d1520;
+  --tx2: #485365;
+  --tx3: #6f7a8c;
+
+  /* Brand and actions */
+  --ac: #00b0f0;
+  --pr: #0a78b5;
+  --prT: #ffffff;
+  --lk: #0a6ea6;
+
+  /* Status tones: foreground / soft background */
+  --ok: #0e7a4e;
+  --okS: #e2f3ea;
+  --warn: #9a5b00;
+  --warnS: #fcf0da;
+  --err: #bf2a30;
+  --errS: #fbe6e6;
+  --info: #0a6ea6;
+  --infoS: #e1f1fa;
+  --neu: #5a6577;
+  --neuS: #eceff3;
+
+  /* Chart series */
+  --c1: #00b0f0;
+  --c2: #0b2a4a;
+  --c3: #9aa6b8;
+  --c4: #1f9d6b;
+  --c5: #e39b2d;
+  --c6: #c2454b;
+
+  /* Toasts / tooltips */
+  --tipBg: #0d1520;
+  --tipFg: #ffffff;
+
+  /* Sidebar */
+  --sb: #0a0f16;
+  --sbBd: #18212c;
+  --sbTx: #c3cdd9;
+  --sbTx2: #7a889b;
+  --sbH: #121a24;
+  --sbA: rgba(0, 176, 240, 0.13);
+  --sbMuted: #556275;
+  --sbCard: #0e141c;
+  --sbFaint: #4e5b6d;
+
+  /* Fixed brand surfaces (theme independent) */
+  --splashBg: #06090d;
+  --splashFg: #f4f7fa;
+  --scrim: rgba(3, 7, 12, 0.58);
+
+  --chev: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6z' fill='%236F7A8C'/></svg>");
+
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  --bg: #06090d;
+  --sf: #0c1117;
+  --sf2: #10161e;
+  --sf3: #17202b;
+  --sfH: #121a23;
+  --inp: #0a0f15;
+  --hd: #0a0f15;
+
+  --bd: #1b2430;
+  --bd2: #2a3542;
+
+  --tx: #e4ebf3;
+  --tx2: #a1aebe;
+  --tx3: #75839a;
+
+  --pr: #00b0f0;
+  --prT: #03121c;
+  --lk: #4fc6f3;
+
+  --ok: #3fd18c;
+  --okS: rgba(63, 209, 140, 0.12);
+  --warn: #f2b34a;
+  --warnS: rgba(242, 179, 74, 0.12);
+  --err: #ff6b6b;
+  --errS: rgba(255, 107, 107, 0.12);
+  --info: #4fc6f3;
+  --infoS: rgba(0, 176, 240, 0.13);
+  --neu: #94a2b4;
+  --neuS: rgba(148, 162, 180, 0.12);
+
+  --c2: #3f74a8;
+  --c3: #5e6c80;
+
+  --tipBg: #e4ebf3;
+  --tipFg: #0c1117;
+
+  --sb: #080c11;
+  --sbBd: #161e28;
+  --sbH: #101721;
+
+  --chev: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6z' fill='%2375839A'/></svg>");
+
+  color-scheme: dark;
+}

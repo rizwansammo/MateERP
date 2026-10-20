@@ -1,0 +1,15 @@
+"""Version 1 API routes. Each domain module contributes its own urls module."""
+
+from django.conf import settings
+from django.urls import include, path
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+
+urlpatterns = [
+    path("", include("apps.core.api.urls")),
+]
+
+if settings.API_DOCS_ENABLED:
+    urlpatterns += [
+        path("schema/", SpectacularAPIView.as_view(), name="schema"),
+        path("docs/", SpectacularSwaggerView.as_view(url_name="v1:schema"), name="docs"),
+    ]

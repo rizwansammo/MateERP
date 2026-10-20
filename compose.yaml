@@ -1,0 +1,51 @@
+# MateERP local development stack.
+# Isolated Compose project: its own containers, network and volume.
+# Ports are bound to 127.0.0.1 only.
+name: mateerp
+
+services:
+  db:
+    image: postgres:18.6-alpine
+    container_name: mateerp-db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-mateerp}
+      POSTGRES_USER: ${POSTGRES_USER:-mateerp}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env (copy .env.example)}
+    ports:
+      - "127.0.0.1:${MATEERP_DB_PORT:-55432}:5432"
+    volumes:
+      - mateerp-pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      target: dev
+    image: mateerp-backend:dev
+    container_name: mateerp-backend
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.dev
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-}
+      DJANGO_LOG_LEVEL: ${DJANGO_LOG_LEVEL:-INFO}
+      DJANGO_TIME_ZONE: ${DJANGO_TIME_ZONE:-Asia/Dhaka}
+      DATABASE_URL: postgres://${POSTGRES_USER:-mateerp}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-mateerp}
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py runserver 0.0.0.0:8000"
+    ports:
+      - "127.0.0.1:${MATEERP_BACKEND_PORT:-8100}:8000"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  mateerp-pgdata:
+    name: mateerp-pgdata
