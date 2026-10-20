@@ -6,6 +6,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
+# Official invoice/receipt PDFs are rendered by WeasyPrint (pango + harfbuzz).
+# Document fonts are vendored under apps/documents/assets/fonts.
+RUN apt-get update     && apt-get install -y --no-install-recommends libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz-subset0 fonts-dejavu-core     && rm -rf /var/lib/apt/lists/*
+
 RUN groupadd --system app && useradd --system --gid app --home-dir /app app \
     && mkdir -p /data/storage && chown app:app /data/storage
 WORKDIR /app

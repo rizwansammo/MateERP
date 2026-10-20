@@ -104,6 +104,21 @@ class ApprovalRequestSerializer(serializers.ModelSerializer):
         payload = obj.payload or {}
         if obj.action == "accounting.post":
             return {"journal_id": payload.get("journal_id", "")}
+        targets = {
+            "invoice.approve": ("invoice_id", "/sales/invoices/"),
+            "payment.verify": ("payment_id", "/sales/payments/"),
+            "credit_note.issue": ("credit_note_id", "/sales/credits"),
+            "refund.pay": ("refund_id", "/sales/credits"),
+            "vendor_bill.post": ("bill_id", "/purchases/bills/"),
+            "expense.post": ("expense_id", "/purchases/expenses/"),
+            "vendor_payment.post": ("payment_id", "/purchases/payments/"),
+        }
+        if obj.action in targets:
+            key, prefix = targets[obj.action]
+            pk = payload.get(key)
+            return (
+                {"record_url": f"{prefix}{pk}/" if prefix.endswith("/") else prefix} if pk else {}
+            )
         return {k: payload[k] for k in ("label", "template", "receipt_template") if k in payload}
 
 

@@ -1,13 +1,25 @@
 import type { ReactNode } from 'react';
 
+import { cn } from '@/lib/cn';
+
+export interface HeaderMeta {
+  label: string;
+  value: ReactNode;
+  tone?: 'ok' | 'warn' | 'err';
+}
+
 interface PageHeaderProps {
   title: string;
   eyebrow?: string;
   description?: ReactNode;
   actions?: ReactNode;
+  /** Label/value facts under the description (prototype PageHead meta). */
+  meta?: HeaderMeta[];
 }
 
-export function PageHeader({ title, eyebrow, description, actions }: PageHeaderProps) {
+const metaTone = { ok: 'text-ok', warn: 'text-warn', err: 'text-err' } as const;
+
+export function PageHeader({ title, eyebrow, description, actions, meta }: PageHeaderProps) {
   return (
     <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
       <div className="flex min-w-0 max-w-[760px] flex-col gap-1.5">
@@ -22,6 +34,16 @@ export function PageHeader({ title, eyebrow, description, actions }: PageHeaderP
         </h1>
         {description && (
           <p className="m-0 text-[13px] leading-[1.55] text-pretty text-tx2">{description}</p>
+        )}
+        {meta && meta.length > 0 && (
+          <div className="mt-0.5 flex flex-wrap gap-x-[18px] gap-y-1.5">
+            {meta.map((m) => (
+              <div key={m.label} className="flex items-center gap-1.5 text-[12px] text-tx2">
+                <span className="text-tx3">{m.label}</span>
+                <span className={cn('font-medium', m.tone ? metaTone[m.tone] : 'text-tx')}>{m.value}</span>
+              </div>
+            ))}
+          </div>
         )}
       </div>
       {actions && <div className="flex flex-wrap gap-2">{actions}</div>}

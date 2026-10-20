@@ -2,15 +2,16 @@
 import type { CSSProperties } from 'react';
 
 import type { BrandingConfig, CompanySnapshot } from '@/lib/api/types';
-import { formatDate } from '@/lib/format';
 
-import { type MoneyFormat, formatAmount, formatMinor } from './money';
-import { type SampleInvoice, computeTotals } from './sample';
+import type { MoneyFormat } from './money';
+import type { SampleInvoice } from './sample';
+import { type InvoiceView, sampleInvoiceView } from './view';
 
 /*
  * Official invoice layouts — Meridian, Ledger and Atlas — reproduced from the
- * approved MateERP-UI prototype. Pure and props-driven so Phase 4 can render
- * issued invoices (and PDFs) from a branding version snapshot.
+ * approved MateERP-UI prototype. Pure and props-driven: branding previews pass
+ * the sample invoice, issued documents pass a server-formatted ``view`` built
+ * from their frozen snapshot. The server renders the same layouts to PDF.
  * A4 at 96 dpi: 794 × 1123 px. Document colours are fixed print colours.
  */
 
@@ -40,20 +41,22 @@ export function initialsOf(name: string): string {
 }
 
 const SPACING = { compact: ['30px', '12px', '5px'], regular: ['42px', '18px', '8px'], airy: ['54px', '24px', '11px'] } as const;
-const pct = (bp: number) => `${(bp / 100).toFixed(bp % 100 ? 1 : 0)}%`;
 const label: CSSProperties = { fontSize: '9px', letterSpacing: '.12em', textTransform: 'uppercase' };
 
 interface InvoiceDocumentProps {
   branding: DocumentBranding;
-  invoice: SampleInvoice;
+  /** Sample content (branding previews). */
+  invoice?: SampleInvoice;
+  /** Server-formatted content (drafts and issued snapshots). Takes precedence. */
+  view?: InvoiceView;
   number: string;
-  /** Currency presentation; defaults to the invoice currency code with international grouping. */
+  /** Currency presentation for sample content. */
   format?: MoneyFormat;
   taxLabel?: string;
   watermark?: string;
 }
 
-export function InvoiceDocument({ branding, invoice, number, format, taxLabel = 'VAT', watermark }: InvoiceDocumentProps) {
+export function InvoiceDocument({ branding, invoice, view, number, format, taxLabel = 'VAT', watermark }: InvoiceDocumentProps) {
   const { config: b, company: co, logoUrl } = branding;
   const { ff, nf } = documentFonts(b);
   const [pad, gap, rowPad] = SPACING[b.spacing];
@@ -66,34 +69,25 @@ export function InvoiceDocument({ branding, invoice, number, format, taxLabel = 
   const address = co.address_lines.join('\n');
   const initials = initialsOf(co.display_name);
   const logoH = `${b.logo_size}px`;
-  const totals = computeTotals(invoice.lines);
-  const cur = invoice.currency;
+  const cur = invoice?.currency ?? 'BDT';
   const fmt: MoneyFormat = format ?? { currency: cur, symbol: cur, display: 'code', grouping: 'international' };
-  // Line figures without a symbol, totals with one, as in the approved design.
-  const money = (m: number) => formatMinor(m, fmt.grouping);
-  const amount = (m: number) => formatAmount(m, fmt);
+  const v = view ?? sampleInvoiceView(invoice!, fmt, taxLabel);
+  const credit = v.title === 'credit_note';
+  const titles = credit
+    ? { meridian: 'CREDIT NOTE', ledger: 'Credit Note', atlas: 'Credit note' }
+    : { meridian: 'INVOICE', ledger: 'Tax Invoice', atlas: 'Invoice' };
 
   const headDir = hd === 'logo-right' ? 'row-reverse' : hd === 'centered' ? 'column' : 'row';
   const headAlign = hd === 'centered' ? 'center' : 'flex-start';
   const headText = hd === 'centered' ? 'center' : 'left';
   const titleAlign = hd === 'centered' ? 'center' : hd === 'logo-right' ? 'flex-start' : 'flex-end';
 
-  const meta = [
-    { l: 'Invoice date', v: formatDate(invoice.issueDate.toISOString()) },
-    { l: 'Due date', v: formatDate(invoice.dueDate.toISOString()) },
-    { l: 'Currency', v: cur },
-  ];
   const heads: [string, 'left' | 'right'][] = [['#', 'left'], ['Description', 'left'], ['Qty', 'right'], ['Unit price', 'right'], ['Disc.', 'right'], ['Tax', 'right'], ['Amount', 'right']];
   const grid = '28px minmax(0,1fr) 54px 92px 50px 54px 100px';
   const thBg = tpl === 'ledger' ? 'transparent' : ts === 'boxed' ? '#F3F4F6' : brand;
   const thFg = tpl === 'ledger' || ts === 'boxed' ? '#111827' : '#FFFFFF';
   const thBd = tpl === 'ledger' ? '1.5px solid #111827' : '0';
   const rowBd = ts === 'striped' ? '0' : '1px solid #E5E7EB';
-  const totalRows = [
-    { l: 'Subtotal', v: amount(totals.subtotal) },
-    ...(totals.discount ? [{ l: 'Discount', v: `−${amount(totals.discount)}` }] : []),
-    ...totals.taxByRate.map(([bp, tax]) => ({ l: `${taxLabel} ${pct(bp)}`, v: amount(tax) })),
-  ];
   const custom = b.custom_fields;
   const showSignature = b.show_signature_on_invoice && (branding.signatureUrl || b.signature_name);
 
@@ -104,7 +98,7 @@ export function InvoiceDocument({ branding, invoice, number, format, taxLabel = 
 
   return (
     <div
-      data-findoc="invoice"
+      data-findoc={credit ? 'credit_note' : 'invoice'}
       data-template={tpl}
       style={{ position: 'relative', width: '794px', minHeight: '1123px', background: '#FFFFFF', color: '#111827', fontFamily: ff, display: 'flex', boxSizing: 'border-box', overflow: 'hidden', fontSize: '11.5px', lineHeight: 1.45 }}
     >
@@ -118,15 +112,15 @@ export function InvoiceDocument({ branding, invoice, number, format, taxLabel = 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
             <div style={{ fontSize: '14px', fontWeight: 600 }}>{legalName}</div>
             <div style={{ whiteSpace: 'pre-line', opacity: 0.82, fontSize: '10.5px' }}>{address}</div>
-            {[co.email, co.phone, co.website].filter(Boolean).map((v) => (
-              <div key={v} style={{ opacity: 0.82, fontSize: '10.5px' }}>{v}</div>
+            {[co.email, co.phone, co.website].filter(Boolean).map((x) => (
+              <div key={x} style={{ opacity: 0.82, fontSize: '10.5px' }}>{x}</div>
             ))}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {meta.map((m) => (
-              <div key={m.l}>
-                <div style={{ ...label, opacity: 0.7 }}>{m.l}</div>
-                <div style={{ fontSize: '12px', fontWeight: 600, fontFamily: nf }}>{m.v}</div>
+            {v.meta.map((m) => (
+              <div key={m.label}>
+                <div style={{ ...label, opacity: 0.7 }}>{m.label}</div>
+                <div style={{ fontSize: '12px', fontWeight: 600, fontFamily: nf }}>{m.value}</div>
               </div>
             ))}
           </div>
@@ -157,7 +151,7 @@ export function InvoiceDocument({ branding, invoice, number, format, taxLabel = 
                 </div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: titleAlign, gap: '4px' }}>
-                <div style={{ fontSize: '30px', fontWeight: 700, letterSpacing: '.14em', color: brand }}>INVOICE</div>
+                <div style={{ fontSize: '30px', fontWeight: 700, letterSpacing: '.14em', color: brand }}>{titles.meridian}</div>
                 <div style={{ fontFamily: nf, fontSize: '13px', fontWeight: 600 }}>{number}</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', color: '#4B5563', fontSize: '10px', alignItems: titleAlign }}>
                   {custom.map((c) => <span key={c.label}>{c.label}: {c.value}</span>)}
@@ -176,7 +170,7 @@ export function InvoiceDocument({ branding, invoice, number, format, taxLabel = 
               <div style={{ color: '#4B5563', fontSize: '10.5px' }}>{[co.email, co.phone, co.website].filter(Boolean).join(' · ')}</div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: titleAlign }}>
-              <div style={{ fontSize: '11px', letterSpacing: '.3em', textTransform: 'uppercase', color: '#6B7280' }}>Tax Invoice</div>
+              <div style={{ fontSize: '11px', letterSpacing: '.3em', textTransform: 'uppercase', color: '#6B7280' }}>{titles.ledger}</div>
               <div style={{ fontFamily: nf, fontSize: '20px', fontWeight: 600, color: accent }}>{number}</div>
               {custom.map((c) => <span key={c.label} style={{ color: '#4B5563', fontSize: '10px' }}>{c.label} {c.value}</span>)}
             </div>
@@ -185,17 +179,17 @@ export function InvoiceDocument({ branding, invoice, number, format, taxLabel = 
 
         {tpl === 'atlas' && (
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: '16px', paddingBottom: '14px', borderBottom: '1px solid #E5E7EB' }}>
-            <div style={{ fontSize: '34px', fontWeight: 700, letterSpacing: '.06em', color: brand }}>Invoice</div>
+            <div style={{ fontSize: '34px', fontWeight: 700, letterSpacing: '.06em', color: brand }}>{titles.atlas}</div>
             <div style={{ fontFamily: nf, fontSize: '14px', fontWeight: 600, color: accent }}>{number}</div>
           </div>
         )}
 
         {tpl !== 'atlas' && (
-          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${meta.length}, minmax(0,1fr))`, borderTop: '1px solid #E5E7EB', borderBottom: '1px solid #E5E7EB' }}>
-            {meta.map((m) => (
-              <div key={m.l} style={{ padding: '9px 0', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                <span style={{ ...label, color: '#6B7280' }}>{m.l}</span>
-                <span style={{ fontFamily: nf, fontWeight: 600, fontSize: '11.5px' }}>{m.v}</span>
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${v.meta.length}, minmax(0,1fr))`, borderTop: '1px solid #E5E7EB', borderBottom: '1px solid #E5E7EB' }}>
+            {v.meta.map((m) => (
+              <div key={m.label} style={{ padding: '9px 0', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                <span style={{ ...label, color: '#6B7280' }}>{m.label}</span>
+                <span style={{ fontFamily: nf, fontWeight: 600, fontSize: '11.5px' }}>{m.value}</span>
               </div>
             ))}
           </div>
@@ -204,17 +198,21 @@ export function InvoiceDocument({ branding, invoice, number, format, taxLabel = 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '28px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
             <div style={{ fontSize: '9px', letterSpacing: '.14em', textTransform: 'uppercase', color: accent, fontWeight: 700, marginBottom: '3px' }}>Bill to</div>
-            <div style={{ fontSize: '13px', fontWeight: 600 }}>{invoice.customer.name}</div>
-            <div style={{ color: '#374151' }}>Attn: {invoice.customer.contact}</div>
-            <div style={{ whiteSpace: 'pre-line', color: '#374151' }}>{invoice.customer.address}</div>
-            <div style={{ color: '#374151' }}>{invoice.customer.country}</div>
-            <div style={{ color: '#6B7280', fontSize: '10.5px' }}>{invoice.customer.taxId}</div>
+            <div style={{ fontSize: '13px', fontWeight: 600 }}>{v.customer.name}</div>
+            {v.customer.contact && <div style={{ color: '#374151' }}>Attn: {v.customer.contact}</div>}
+            <div style={{ whiteSpace: 'pre-line', color: '#374151' }}>{v.customer.address}</div>
+            {v.customer.country && <div style={{ color: '#374151' }}>{v.customer.country}</div>}
+            <div style={{ color: '#6B7280', fontSize: '10.5px' }}>{v.customer.taxId}</div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-            <div style={{ fontSize: '9px', letterSpacing: '.14em', textTransform: 'uppercase', color: accent, fontWeight: 700, marginBottom: '3px' }}>Project</div>
-            <div style={{ fontWeight: 600 }}>{invoice.project.name}</div>
-            <div style={{ fontFamily: nf, color: '#6B7280', fontSize: '10.5px' }}>{invoice.project.reference}</div>
-            <div style={{ color: '#374151', marginTop: '4px', textWrap: 'pretty' }}>{invoice.project.description}</div>
+            {v.reference && (
+              <>
+                <div style={{ fontSize: '9px', letterSpacing: '.14em', textTransform: 'uppercase', color: accent, fontWeight: 700, marginBottom: '3px' }}>{v.reference.title}</div>
+                <div style={{ fontWeight: 600 }}>{v.reference.name}</div>
+                {v.reference.code && <div style={{ fontFamily: nf, color: '#6B7280', fontSize: '10.5px' }}>{v.reference.code}</div>}
+                {v.reference.description && <div style={{ color: '#374151', marginTop: '4px', textWrap: 'pretty' }}>{v.reference.description}</div>}
+              </>
+            )}
           </div>
         </div>
 
@@ -224,20 +222,20 @@ export function InvoiceDocument({ branding, invoice, number, format, taxLabel = 
               <div key={t} style={{ padding: '8px 6px', fontSize: '9px', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', textAlign: a }}>{t}</div>
             ))}
           </div>
-          {invoice.lines.map((line, i) => {
+          {v.lines.map((line, i) => {
             const cell: CSSProperties = { padding: `${rowPad} 6px`, textAlign: 'right', fontFamily: nf, fontVariantNumeric: 'tabular-nums' };
             return (
-              <div key={line.description} style={{ display: 'grid', gridTemplateColumns: grid, background: ts === 'striped' && i % 2 ? 'rgba(17,24,39,.035)' : 'transparent', borderBottom: rowBd }}>
+              <div key={`${i}-${line.description}`} style={{ display: 'grid', gridTemplateColumns: grid, background: ts === 'striped' && i % 2 ? 'rgba(17,24,39,.035)' : 'transparent', borderBottom: rowBd }}>
                 <div style={{ padding: `${rowPad} 6px`, color: '#9CA3AF', fontFamily: nf }}>{String(i + 1).padStart(2, '0')}</div>
                 <div style={{ padding: `${rowPad} 6px`, display: 'flex', flexDirection: 'column', gap: '1px' }}>
                   <span style={{ fontWeight: 500 }}>{line.description}</span>
                   {line.detail && <span style={{ color: '#6B7280', fontSize: '10px' }}>{line.detail}</span>}
                 </div>
                 <div style={cell}>{line.quantity}</div>
-                <div style={cell}>{money(line.unitMinor)}</div>
-                <div style={{ ...cell, color: '#6B7280' }}>{line.discountBp ? pct(line.discountBp) : '—'}</div>
-                <div style={{ ...cell, color: '#6B7280' }}>{line.taxBp ? pct(line.taxBp) : '0%'}</div>
-                <div style={{ ...cell, fontWeight: 600 }}>{money(totals.lines[i]!.net)}</div>
+                <div style={cell}>{line.unitPrice}</div>
+                <div style={{ ...cell, color: '#6B7280' }}>{line.discount}</div>
+                <div style={{ ...cell, color: '#6B7280' }}>{line.tax}</div>
+                <div style={{ ...cell, fontWeight: 600 }}>{line.amount}</div>
               </div>
             );
           })}
@@ -245,37 +243,37 @@ export function InvoiceDocument({ branding, invoice, number, format, taxLabel = 
 
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: '28px', alignItems: 'flex-start' }}>
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px', minWidth: 0 }}>
-            {b.payment_instructions && (
+            {b.payment_instructions && v.showPaymentInstructions && (
               <div style={{ background: '#F9FAFB', borderTop: `2px solid ${accent}`, padding: '10px 12px' }}>
                 <div style={{ fontSize: '9px', letterSpacing: '.14em', textTransform: 'uppercase', fontWeight: 700, color: accent, marginBottom: '4px' }}>Payment instructions</div>
                 <div style={{ whiteSpace: 'pre-line', color: '#374151', fontSize: '10.5px' }}>{b.payment_instructions}</div>
               </div>
             )}
-            {invoice.notes && (
+            {v.notes && (
               <div>
                 <div style={{ fontSize: '9px', letterSpacing: '.14em', textTransform: 'uppercase', fontWeight: 700, color: '#6B7280', marginBottom: '3px' }}>Notes</div>
-                <div style={{ whiteSpace: 'pre-line', color: '#374151', fontSize: '10.5px' }}>{invoice.notes}</div>
+                <div style={{ whiteSpace: 'pre-line', color: '#374151', fontSize: '10.5px' }}>{v.notes}</div>
               </div>
             )}
           </div>
           <div style={{ width: '270px', flex: 'none', display: 'flex', flexDirection: 'column' }}>
-            {totalRows.map((t) => (
-              <div key={t.l} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid #F3F4F6', color: '#374151' }}>
-                <span>{t.l}</span>
-                <span style={{ fontFamily: nf, fontVariantNumeric: 'tabular-nums' }}>{t.v}</span>
+            {v.totals.map((t) => (
+              <div key={t.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid #F3F4F6', color: '#374151' }}>
+                <span>{t.label}</span>
+                <span style={{ fontFamily: nf, fontVariantNumeric: 'tabular-nums' }}>{t.value}</span>
               </div>
             ))}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', marginTop: '6px', background: tpl === 'ledger' ? 'transparent' : brand, color: tpl === 'ledger' ? '#111827' : '#FFFFFF', borderTop: tpl === 'ledger' ? '2px solid #111827' : '0' }}>
-              <span style={{ fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', fontSize: '10.5px' }}>Total due</span>
-              <span style={{ fontFamily: nf, fontSize: '16px', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{amount(totals.total)}</span>
+              <span style={{ fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', fontSize: '10.5px' }}>{v.totalLabel}</span>
+              <span style={{ fontFamily: nf, fontSize: '16px', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{v.total}</span>
             </div>
-            <div style={{ textAlign: 'right', color: '#6B7280', fontSize: '10px', marginTop: '6px' }}>Due by {formatDate(invoice.dueDate.toISOString())}</div>
+            {v.dueLine && <div style={{ textAlign: 'right', color: '#6B7280', fontSize: '10px', marginTop: '6px' }}>{v.dueLine}</div>}
           </div>
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: '24px', marginTop: 'auto', paddingTop: '16px' }}>
           <div style={{ flex: 1, minWidth: 0 }}>
-            {b.terms && (
+            {b.terms && v.showTerms && (
               <>
                 <div style={{ fontSize: '9px', letterSpacing: '.14em', textTransform: 'uppercase', fontWeight: 700, color: '#6B7280', marginBottom: '3px' }}>Terms &amp; conditions</div>
                 <div style={{ color: '#4B5563', fontSize: '10px', whiteSpace: 'pre-line', textWrap: 'pretty' }}>{b.terms}</div>

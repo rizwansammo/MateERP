@@ -2,7 +2,10 @@
 
 import re
 from collections.abc import Mapping
+from datetime import date
+from decimal import Decimal
 from typing import Any
+from uuid import UUID
 
 from django.db import models
 from django.http import HttpRequest
@@ -31,6 +34,10 @@ def redact(value: Any) -> Any:
         return [redact(v) for v in value]
     if isinstance(value, str) and len(value) > _MAX_STRING:
         return value[:_MAX_STRING] + "…"
+    if isinstance(value, Decimal):
+        return format(value, "f")  # exact text, never a float
+    if isinstance(value, date | UUID):
+        return str(value)
     return value
 
 

@@ -153,3 +153,15 @@ Reproduced from `components/erp/FinDoc.tsx` in `frontend/src/features/documents/
   - Square: frames at 328 and 300; text 22px/700; centre 50px/800.
 - **Typed signature:** Herr Von Muellerhoff 36px (34px on receipts) in `#1F2A44`.
 - **Previews:** watermarked PREVIEW, rotated −28° (receipts −20°), and use clearly fictional sample data.
+
+## Phase 4 — sales, purchases and filing
+
+Reference inspected read-only from the existing prototype build at port 3200. No prototype files or application source were copied.
+
+- Sales/Purchases overview: six contiguous KPI cells; two equal chart panels with 18px gaps; 240px plots and compact legends. Sales uses grouped invoice/collection bars and a horizontal five-bucket aging strip. Purchases uses stacked expense-category bars and eight horizontal vendor bars. Data comes from the posted GL; pending work is labeled separately.
+- Tables reuse `Table`, `TableKit`, `Badge` and existing 13px typography, borders and row density. Editors reuse sharp `Drawer`/`FormGrid`/`DialogFooter`; line-item forms use a 1000px drawer, vendor-payment review 820px.
+- Filing uses a 250px tree pane, folder cards, breadcrumbs, search, sort and list/grid controls. The viewer retains the dark document chrome, zoom, fullscreen, private preview and download.
+- Official documents retain Meridian, Ledger and Atlas at 794×1123px, Official/Compact receipts at 794×600px. Server templates use the same fonts, colors, spacing and branding configuration. Multi-page tables repeat headers with a safe top margin and retain all lines/totals.
+- Product wordmark, sidebar 264/64px, header 56px, colors, theme tokens and shell spacing are unchanged. Unimplemented founder finance and operations remain planned. No demo financial records or simulated actions were introduced.
+
+Side-by-side review covers Sales/Purchases overview, invoices, expenses and both explorers. Pixel identity is not asserted: real permissions, empty states, reconciliation evidence and production validation change content and necessary controls. Browser tests cover desktop/light/dark/mobile and compact navigation; PDF raster review covers all official layouts and multi-page continuation.

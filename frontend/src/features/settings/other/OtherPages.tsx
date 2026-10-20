@@ -103,8 +103,9 @@ export function AboutPage() {
           { label: 'Phase 1', value: PHASES[1]! },
           { label: 'Phase 2', value: PHASES[2]! },
           { label: 'Phase 3', value: PHASES[3]! },
+            { label: 'Phase 4', value: PHASES[4]! },
         ]} />
-        <InfoPanel title="Roadmap" rows={[4, 5, 6, 7].map((p) => ({ label: `Phase ${p}`, value: PHASES[p]!, tone: 'muted' as const }))} />
+        <InfoPanel title="Roadmap" rows={[5, 6, 7].map((p) => ({ label: `Phase ${p}`, value: PHASES[p]!, tone: 'muted' as const }))} />
       </InfoPanels>
     </PageContainer>
   );

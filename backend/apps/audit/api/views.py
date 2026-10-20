@@ -57,6 +57,11 @@ class AuditEventListView(generics.ListAPIView):
             qs = qs.filter(action=action)
         if params.get("outcome") in AuditEvent.Outcome.values:
             qs = qs.filter(outcome=params["outcome"])
+        # Activity of one record, e.g. target_type=billing.invoice&target_id=12 (indexed).
+        if target_type := params.get("target_type"):
+            qs = qs.filter(target_type=target_type[:64])
+        if target_id := params.get("target_id"):
+            qs = qs.filter(target_id=target_id[:64])
         if q := params.get("q", "").strip():
             qs = qs.filter(
                 Q(target_label__icontains=q)

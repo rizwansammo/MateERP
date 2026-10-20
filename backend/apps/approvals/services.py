@@ -25,10 +25,24 @@ from .models import ApprovalPolicy, ApprovalRequest
 # executor(request, approval_request, approver) -> result reference string
 Executor = Callable[[HttpRequest, ApprovalRequest, User], str]
 _executors: dict[str, Executor] = {}
+# Permissions a decider must hold, and actions whose execution posts financial effects
+# (those take the company financial lock before the approval row).
+_decider_permissions: dict[str, tuple[str, ...]] = {}
+_financial_actions: set[str] = {"accounting.post"}
 
 
-def register_executor(action: str, executor: Executor) -> None:
+def register_executor(
+    action: str,
+    executor: Executor,
+    *,
+    decider_permissions: tuple[str, ...] = (),
+    financial: bool = False,
+) -> None:
     _executors[action] = executor
+    if decider_permissions:
+        _decider_permissions[action] = tuple(decider_permissions)
+    if financial:
+        _financial_actions.add(action)
 
 
 def ensure_policies() -> None:
@@ -138,6 +152,9 @@ def can_decide(user: User, approval: ApprovalRequest) -> tuple[bool, str]:
         "accounting.manage",
     } <= get_permission_codes(user):
         return False, "Financial approval and accounting permissions are required."
+    required = _decider_permissions.get(approval.action)
+    if required and not set(required) <= get_permission_codes(user):
+        return False, "You do not hold the permissions needed to decide this request."
     policy = (
         ApprovalPolicy.objects.select_related("approver_role")
         .filter(category=approval.category)
@@ -181,7 +198,7 @@ def decide(
     with transaction.atomic():
         # The accounting posting path takes the company lock before an approval row.
         # Use that same order here so decisions and draft submissions cannot deadlock.
-        if ApprovalRequest.objects.filter(pk=approval_id, action="accounting.post").exists():
+        if ApprovalRequest.objects.filter(pk=approval_id, action__in=_financial_actions).exists():
             from apps.accounting.services.setup import lock_company
 
             lock_company()

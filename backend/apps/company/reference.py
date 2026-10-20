@@ -107,6 +107,9 @@ NUMBERING_KEYS: dict[str, str] = {
     "vendor_bill": "Vendor bill",
     "purchase_order": "Purchase order",
     "journal": "Journal entry",
+    "sales_order": "Sales order",
+    "refund": "Customer refund",
+    "vendor_payment": "Vendor payment",
 }
 
 DEFAULT_NUMBERING: dict[str, str] = {
@@ -118,4 +121,7 @@ DEFAULT_NUMBERING: dict[str, str] = {
     "vendor_bill": "BILL-{YYYY}-{###}",
     "purchase_order": "PO-{YYYY}-{###}",
     "journal": "JV-{YYYY}-{####}",
+    "sales_order": "SO-{YYYY}-{###}",
+    "refund": "RF-{YYYY}-{###}",
+    "vendor_payment": "VP-{YYYY}-{####}",
 }

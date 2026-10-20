@@ -1,0 +1,163 @@
+{% extends "documents/base.html" %}
+{% block style %}
+@page {
+  size: 794px 1123px;
+  margin: {{ pad }}px {{ pad }}px 44px {% if b.invoice_template == "atlas" %}{{ pad|add:220 }}{% else %}{{ pad }}{% endif %}px;
+  @bottom-left { content: "{{ footer_css|safe }}"; vertical-align: top; padding-top: 10px; border-top: 1px solid #E5E7EB; color: #6B7280; font-size: 9.5px; font-family: {{ ff|safe }}; }
+  @bottom-center { content: ""; border-top: 1px solid #E5E7EB; }
+  @bottom-right { content: "{{ number_css|safe }} · Page " counter(page) " of " counter(pages); vertical-align: top; padding-top: 10px; border-top: 1px solid #E5E7EB; color: #6B7280; font-size: 9.5px; font-family: {{ nf|safe }}; }
+}
+.main { padding-top: 0; }
+.main > * + * { margin-top: {{ gap }}px; }
+.bar { position: fixed; top: -{{ pad }}px; left: -{{ pad }}px; right: -{{ pad }}px; height: 7px; background: {{ b.brand_color }}; }
+.bar i { position: absolute; left: 0; top: 0; height: 7px; width: 180px; background: {{ b.accent_color }}; }
+.side { position: fixed; top: -{{ pad }}px; left: -{{ pad|add:220 }}px; width: 220px; height: 1123px; background: {{ b.brand_color }}; color: #FFFFFF; padding: {{ pad }}px 26px; display: flex; flex-direction: column; gap: 26px; }
+.head { display: flex; flex-direction: {{ head_dir }}; align-items: {{ head_align }}; justify-content: space-between; gap: 24px; text-align: {{ head_text }}; }
+.col { display: flex; flex-direction: column; }
+.meta { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid #E5E7EB; border-bottom: 1px solid #E5E7EB; }
+.meta > div { padding: 9px 0; }
+.parties { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+table.lines { width: 100%; border-collapse: collapse; table-layout: fixed; {% if b.table_style == "boxed" %}border: 1px solid #D1D5DB;{% endif %} }
+table.lines th { padding: 8px 6px; font-size: 9px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; text-align: right;
+  background: {{ th_bg }}; color: {{ th_fg }}; {% if b.invoice_template == "ledger" %}border-bottom: 1.5px solid #111827;{% endif %} }
+table.lines th.l, table.lines td.l { text-align: left; }
+table.lines td { padding: {{ row_pad }}px 6px; text-align: right; vertical-align: top; {% if b.table_style != "striped" %}border-bottom: 1px solid #E5E7EB;{% endif %} }
+table.lines tr { break-inside: avoid; }
+{% if b.table_style == "striped" %}table.lines tbody tr:nth-child(even) td { background: rgba(17,24,39,.035); }{% endif %}
+.after { display: flex; justify-content: space-between; gap: 28px; align-items: flex-start; break-inside: avoid; }
+.totals { width: 270px; flex: none; }
+.totals .row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #F3F4F6; color: #374151; }
+.due { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; margin-top: 6px;
+  {% if b.invoice_template == "ledger" %}border-top: 2px solid #111827; color: #111827;{% else %}background: {{ b.brand_color }}; color: #FFFFFF;{% endif %} }
+.instructions { background: #F9FAFB; border-top: 2px solid {{ b.accent_color }}; padding: 10px 12px; }
+.closing { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; padding-top: 16px; break-inside: avoid; }
+{% include "documents/signature.css" %}
+{% endblock %}
+{% block body %}
+{% if b.invoice_template == "atlas" %}
+<div class="side">
+  {% if logo %}<img src="{{ logo }}" style="height: {{ b.logo_size }}px; max-width: 168px; object-fit: contain; background: #fff; padding: 6px; align-self: flex-start;">
+  {% else %}<div style="width: 48px; height: 48px; background: {{ b.accent_color }}; color: #fff; font-weight: 700; font-size: 18px; letter-spacing: .04em; text-align: center; line-height: 48px;">{{ initials }}</div>{% endif %}
+  <div class="col" style="gap: 4px;">
+    <div style="font-size: 14px; font-weight: 600;">{{ legal_name }}</div>
+    <div class="pre" style="opacity: .82; font-size: 10.5px;">{{ address }}</div>
+    {% for v in co_contacts %}<div style="opacity: .82; font-size: 10.5px;">{{ v }}</div>{% endfor %}
+  </div>
+  <div class="col" style="gap: 12px;">
+    {% for m in meta %}<div><div class="label" style="opacity: .7;">{{ m.0 }}</div><div class="nf" style="font-size: 12px; font-weight: 600;">{{ m.1 }}</div></div>{% endfor %}
+  </div>
+  <div class="col" style="margin-top: auto; gap: 3px;">
+    {% for c in b.custom_fields %}<div style="font-size: 9.5px; opacity: .8;">{{ c.label }}: {{ c.value }}</div>{% endfor %}
+  </div>
+</div>
+{% endif %}
+{% if b.invoice_template == "meridian" %}<div class="bar"><i></i></div>{% endif %}
+<div class="main">
+  {% if b.invoice_template == "meridian" %}
+  <div class="head" style="margin-top: 8px;">
+    <div class="col" style="gap: 8px; align-items: {{ head_align }};">
+      {% if logo %}<img src="{{ logo }}" style="height: {{ b.logo_size }}px; max-width: 240px; object-fit: contain;">
+      {% else %}<div style="display: flex; align-items: center; gap: 10px;"><div style="width: 40px; height: 40px; background: {{ b.brand_color }}; color: #fff; font-weight: 700; font-size: 15px; text-align: center; line-height: 40px;">{{ initials }}</div><div style="font-size: 17px; font-weight: 700; color: {{ b.brand_color }}; letter-spacing: -.01em;">{{ co.display_name }}</div></div>{% endif %}
+      <div style="color: #4B5563; font-size: 10.5px; line-height: 1.5;">
+        <div style="font-weight: 600; color: #111827;">{{ legal_name }}</div>
+        <div class="pre">{{ address }}</div>
+        <div>{{ co_email_phone }}</div>
+        <div>{{ co.website }}</div>
+        {% if tax_reg %}<div>{{ tax_reg }}</div>{% endif %}
+      </div>
+    </div>
+    <div class="col" style="align-items: {{ title_align }}; gap: 4px;">
+      <div style="font-size: 30px; font-weight: 700; letter-spacing: .14em; color: {{ b.brand_color }};">{{ title }}</div>
+      <div class="nf" style="font-size: 13px; font-weight: 600;">{{ doc.number }}</div>
+      <div class="col" style="gap: 1px; color: #4B5563; font-size: 10px; align-items: {{ title_align }};">
+        {% for c in b.custom_fields %}<span>{{ c.label }}: {{ c.value }}</span>{% endfor %}
+      </div>
+    </div>
+  </div>
+  {% elif b.invoice_template == "ledger" %}
+  <div class="head" style="padding-bottom: 18px; border-bottom: 2px solid #111827;">
+    <div class="col" style="gap: 6px; align-items: {{ head_align }};">
+      {% if logo %}<img src="{{ logo }}" style="height: {{ b.logo_size }}px; max-width: 220px; object-fit: contain;">{% endif %}
+      <div style="font-size: 19px; font-weight: 600; letter-spacing: -.01em;">{{ legal_name }}</div>
+      <div class="pre" style="color: #4B5563; font-size: 10.5px;">{{ address }}</div>
+      <div style="color: #4B5563; font-size: 10.5px;">{{ co_contacts_line }}</div>
+      {% if tax_reg %}<div style="color: #4B5563; font-size: 10.5px;">{{ tax_reg }}</div>{% endif %}
+    </div>
+    <div class="col" style="gap: 4px; align-items: {{ title_align }};">
+      <div style="font-size: 11px; letter-spacing: .3em; text-transform: uppercase; color: #6B7280;">{{ ledger_title }}</div>
+      <div class="nf" style="font-size: 20px; font-weight: 600; color: {{ b.accent_color }};">{{ doc.number }}</div>
+      {% for c in b.custom_fields %}<span style="color: #4B5563; font-size: 10px;">{{ c.label }} {{ c.value }}</span>{% endfor %}
+    </div>
+  </div>
+  {% else %}
+  <div style="display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; padding-bottom: 14px; border-bottom: 1px solid #E5E7EB;">
+    <div style="font-size: 34px; font-weight: 700; letter-spacing: .06em; color: {{ b.brand_color }};">{{ atlas_title }}</div>
+    <div class="nf" style="font-size: 14px; font-weight: 600; color: {{ b.accent_color }};">{{ doc.number }}</div>
+  </div>
+  {% endif %}
+
+  {% if b.invoice_template != "atlas" %}
+  <div class="meta">
+    {% for m in meta %}<div><div class="label muted">{{ m.0 }}</div><div class="nf" style="font-weight: 600; font-size: 11.5px;">{{ m.1 }}</div></div>{% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="parties">
+    <div class="col" style="gap: 3px;">
+      <div class="caption" style="color: {{ b.accent_color }}; margin-bottom: 3px;">Bill to</div>
+      <div style="font-size: 13px; font-weight: 600;">{{ customer.name }}</div>
+      {% if customer.contact_name %}<div style="color: #374151;">Attn: {{ customer.contact_name }}</div>{% endif %}
+      <div class="pre" style="color: #374151;">{{ customer_address }}</div>
+      {% if customer.tax_id %}<div class="muted" style="font-size: 10.5px;">{{ tax_registration_label }} {{ customer.tax_id }}</div>{% endif %}
+    </div>
+    <div class="col" style="gap: 3px;">
+      {% if reference_block %}
+      <div class="caption" style="color: {{ b.accent_color }}; margin-bottom: 3px;">{{ reference_block.title }}</div>
+      <div style="font-weight: 600;">{{ reference_block.name }}</div>
+      {% if reference_block.code %}<div class="nf muted" style="font-size: 10.5px;">{{ reference_block.code }}</div>{% endif %}
+      {% if reference_block.detail %}<div style="color: #374151; margin-top: 4px;">{{ reference_block.detail }}</div>{% endif %}
+      {% endif %}
+    </div>
+  </div>
+
+  <table class="lines">
+    <colgroup><col style="width: 28px"><col><col style="width: 54px"><col style="width: 92px"><col style="width: 50px"><col style="width: 54px"><col style="width: 100px"></colgroup>
+    <thead><tr><th class="l">#</th><th class="l">Description</th><th>Qty</th><th>Unit price</th><th>Disc.</th><th>Tax</th><th>Amount</th></tr></thead>
+    <tbody>
+    {% for line in lines %}
+      <tr>
+        <td class="l nf" style="color: #9CA3AF;">{{ line.index }}</td>
+        <td class="l" style="font-weight: 500;">{{ line.description }}</td>
+        <td class="num">{{ line.quantity }}</td>
+        <td class="num">{{ line.unit_price }}</td>
+        <td class="num muted">{{ line.discount }}</td>
+        <td class="num muted">{{ line.tax_rate }}</td>
+        <td class="num" style="font-weight: 600;">{{ line.amount }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="after">
+    <div class="col" style="flex: 1; gap: 12px; min-width: 0;">
+      {% if b.payment_instructions and show_payment_instructions %}
+      <div class="instructions"><div class="caption" style="color: {{ b.accent_color }}; margin-bottom: 4px;">Payment instructions</div><div class="pre" style="color: #374151; font-size: 10.5px;">{{ b.payment_instructions }}</div></div>
+      {% endif %}
+      {% if notes %}<div><div class="caption muted" style="margin-bottom: 3px;">Notes</div><div class="pre" style="color: #374151; font-size: 10.5px;">{{ notes }}</div></div>{% endif %}
+      {% if prices_note %}<div class="muted" style="font-size: 10px;">{{ prices_note }}</div>{% endif %}
+    </div>
+    <div class="totals">
+      {% for t in total_rows %}<div class="row"><span>{{ t.0 }}</span><span class="num">{{ t.1 }}</span></div>{% endfor %}
+      <div class="due"><span style="font-weight: 700; letter-spacing: .06em; text-transform: uppercase; font-size: 10.5px;">{{ total_label }}</span><span class="num" style="font-size: 16px; font-weight: 700;">{{ total }}</span></div>
+      {% if due_line %}<div class="muted" style="text-align: right; font-size: 10px; margin-top: 6px;">{{ due_line }}</div>{% endif %}
+    </div>
+  </div>
+
+  <div class="closing">
+    <div style="flex: 1; min-width: 0;">
+      {% if b.terms and show_terms %}<div class="caption muted" style="margin-bottom: 3px;">Terms &amp; conditions</div><div class="pre" style="color: #4B5563; font-size: 10px;">{{ b.terms }}</div>{% endif %}
+    </div>
+    {% if show_signature %}{% include "documents/signature.html" with compact=False %}{% endif %}
+  </div>
+</div>
+{% endblock %}

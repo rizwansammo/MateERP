@@ -8,6 +8,14 @@ class FilePurpose(models.TextChoices):
     COMPANY_LOGO = "company_logo", "Company logo"
     BRANDING_SIGNATURE = "branding_signature", "Authorised signature"
     BRANDING_SEAL = "branding_seal", "Company seal"
+    # Phase 4 documents. Generated PDFs are rendered by the server from frozen snapshots;
+    # uploads are validated (PDF structure / image re-encoding) but not malware-scanned.
+    INVOICE_PDF = "invoice_pdf", "Issued invoice PDF"
+    RECEIPT_PDF = "receipt_pdf", "Money receipt PDF"
+    CREDIT_NOTE_PDF = "credit_note_pdf", "Credit note PDF"
+    BANK_PROOF = "bank_proof", "Bank payment proof"
+    CLIENT_DOCUMENT = "client_document", "Client supporting document"
+    VENDOR_DOCUMENT = "vendor_document", "Vendor document"
 
 
 class StoredFile(models.Model):

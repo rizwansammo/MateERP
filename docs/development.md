@@ -100,7 +100,7 @@ Never use `docker compose down -v`, volume removal, database drop or flush durin
 5. Enter a balanced opening journal at the chosen migration date, with every equity/earnings offset visible. Approval rules apply. There is only one initial opening source; subsequent corrections use linked reversals/adjustments.
 6. Foreign currencies need enabled currency settings and an applicable exchange-rate revision. Treasury previews show explicit FX differences; a changed quote requires a fresh preview.
 
-See [accounting-contract.md](accounting-contract.md) for posting, approval, period, reconciliation and history rules. Phase 3 does not issue invoices, receipts or tax filings.
+See [accounting-contract.md](accounting-contract.md) for posting, approval, period, reconciliation and history rules. Phase 4 adds invoices, receipts, credits and purchasing. Statutory tax filing remains outside the application.
 
 ## Editor support (optional)
 Python dependencies live in the container. For IntelliSense, create a local venv (includes `django-stubs` and `djangorestframework-stubs`):
@@ -119,3 +119,42 @@ Then select `backend\.venv` as the interpreter. `pyproject.toml` points Pyrefly 
 - **"Security check failed" on a form:** the CSRF cookie was rotated (e.g. after signing in elsewhere). The client retries once automatically; reload if it persists.
 - **Signed in on another port or host:** add the origin to `DJANGO_CSRF_TRUSTED_ORIGINS` in `.env`.
 - **Changed `.env` credentials after the first start:** the database volume keeps the original password. Restore the matching local configuration or arrange a deliberate credential rotation; do not recreate the data volume.
+
+
+## Sales, purchasing and documents (Phase 4)
+
+For an existing checkout, preserve `.env`, `.env.local`, PostgreSQL and storage volumes. Rebuild only the MateERP backend image for WeasyPrint 70.0, pypdf 6.21.1 and their Pango/Harfbuzz libraries:
+
+```powershell
+docker compose up -d --build backend
+docker compose exec backend python manage.py migrate
+```
+
+The established framework versions are retained. WeasyPrint runs inside Linux Docker; Windows developers do not need a native PDF runtime. Fonts are bundled and the renderer denies arbitrary external URLs.
+
+1. Configure unused postable Receivable, Payable and Customer credit controls in Chart of Accounts. Migrations never relabel balances or grant new sensitive codes to existing non-administrator roles; review role permissions explicitly.
+2. Set revenue/expense defaults and billing items at `/sales/setup`. Configure applicable tax revisions and FX accounts/rates.
+3. Publish invoice/receipt branding. Issued documents freeze company identity, line/tax values and the published version.
+4. Use Sales for customers, orders, projects, invoices, payments, receipts and credits. Customer payments require a different authorized verifier. Pending verification/approval has no posted cash or official receipt.
+5. Use Purchases for vendors, bills, accrued/paid expenses and reviewed payments. Foreign-payment previews require explicit confirmation of nonzero disclosed FX differences. Purchase orders remain Phase 6.
+6. Client/Vendor Documents file generated PDFs automatically and accept authorized PDF/PNG/JPEG/WEBP evidence up to 10 MB. Bank proofs require evidence permission for metadata and bytes. Archive uploaded evidence with a reason; historical official PDFs remain retained.
+
+PDF failure does not duplicate a successfully issued financial record. Open its detail page and use **Retry PDF**. This renders the frozen snapshot and preserves the first ready PDF. Investigate errors through request IDs and backend logs.
+
+### Recurring schedules
+
+The UI's **Run due** processes selected schedules through today. Windows Task Scheduler can invoke the same services:
+
+```powershell
+# Working directory: C:\Users\Rizwan\Desktop\MateERP
+docker compose exec -T backend python manage.py run_recurring --dry-run
+docker compose exec -T backend python manage.py run_recurring
+# Optional controlled catch-up date:
+docker compose exec -T backend python manage.py run_recurring --date 2026-10-21
+```
+
+Run only against this Compose project and review output for failed occurrences. No scheduler is installed automatically. Repeated/overlapping runs do not duplicate schedule/date occurrences. Default invoice runs and all expense runs create drafts. Auto-issue requires explicit authority that is rechecked at execution. No email or payment-provider action is simulated.
+
+### Phase 4 checks
+
+Run `powershell -ExecutionPolicy Bypass -File scripts\verify.ps1`, or `scripts\e2e.ps1 -TestFile phase4.spec.ts` for focused isolated browser scenarios. Tests cover exact tax/discounts, historical FX, settlement, verifier segregation, concurrency, period locks, approvals, reconciliation, immutable PDFs and private evidence. See [Phase 4 summary](phase-04-summary.md) for execution results.

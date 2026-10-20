@@ -22,6 +22,9 @@ export const NUMBERING_LABELS: Record<string, string> = {
   vendor_bill: 'Vendor bill',
   purchase_order: 'Purchase order',
   journal: 'Journal entry',
+  sales_order: 'Sales order',
+  refund: 'Customer refund',
+  vendor_payment: 'Vendor payment',
 };
 
 export function NumberingDrawer({ numbering, onClose, onSaved }: {

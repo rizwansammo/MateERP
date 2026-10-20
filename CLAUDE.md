@@ -33,6 +33,8 @@ MateERP is NetaMate's commercial ERP. This repository is the **production applic
   - `audit`: append-only events
   - `accounting`: account hierarchy, periods, immutable posted journals, posting identities, rates, tax mappings, reports
   - `banking`: cash/bank metadata, treasury adapters, statements and reconciliation; no separate ledger
+  - `sales` / `billing`: customers, orders, projects, invoices, verified collections, credits and recurrence
+  - `purchasing` / `documents`: vendors, bills, expenses, payments and private financial documents
 - Business rules live in `services/`; views and serializers stay thin; multi-row changes use `transaction.atomic()`.
 - **Frontend:** Next.js App Router + strict TypeScript + Tailwind v4.
   - The browser only calls `/api/v1/*` on its own origin; Next proxies it to Django.
@@ -63,8 +65,20 @@ MateERP is NetaMate's commercial ERP. This repository is the **production applic
 - Periods lock. Financial actions are idempotent. Founder personal settlements stay outside company obligations.
 - Issued invoices and receipts reference the `BrandingVersion` they were issued with (`features/documents/*` render them).
 
+## Phase 4 conventions
+- Apps `sales`, `billing`, `purchasing` and `documents` own customers/projects/orders, AR/collections/credits, AP/expenses and private financial filing respectively. Purchase orders are Phase 6.
+- Registered domain adapters obtain actor/source/action-scoped `PostingAuthority`; never expose it through serializers or add a public accounting bypass. Source-owned reversals go through their domain.
+- Acquire the company financial lock first. Persist source, number, journal and frozen snapshot atomically. Repeated financial requests compare canonical payload fingerprints; changed payloads conflict.
+- A customer payment recorder cannot verify their own payment. Pending verification/approval cannot post cash or generate an official receipt. Credit notes and cash refunds are distinct.
+- AR, AP and customer-credit source balances independently reconcile to GL controls. Never add a second ledger or bank balance cache. Historical FX/carrying values and period/reconciliation guards still apply.
+- Issued records and their first ready PDFs are immutable. PDF failure is retried against the frozen snapshot without duplicate issuance/posting. Never regenerate ready historical files from current branding.
+- Financial uploads use the validated PDF/image storage service, private purpose/reference access and explicit bank-evidence permission. No malware scanning is claimed. Generated PDFs are automatically filed; multi-invoice receipts share one retained file across invoice-year bundles.
+- Recurrence is schedule/date-idempotent. Default invoices and all expenses generate drafts. Recheck explicit auto-issue authority and current owner permissions. No background service or OS task is installed implicitly.
+- Project profitability uses posted historical base-currency GL costs/revenue across currencies, excluding recoverable tax/capital assets. Issued project billing locks financial identity.
+- Browser financial fixtures run only through `scripts/e2e.ps1` in fresh isolated databases on backend 8101, never the development installation. Retain checkpoints in `docs/phase-04-progress.md` and record actual results.
+
 ## Roadmap
-1. Foundation ✅ · 2. Auth & Administration ✅ · 3. Core Accounting Engine implemented (acceptance report in docs) · 4. Billing, Expenses & Documents · 5. Founder Finance & Ownership · 6. Operations & Reporting · 7. Security, Final Testing & Release.
+1. Foundation ✅ · 2. Auth & Administration ✅ · 3. Core Accounting Engine completed · 4. Billing, Expenses & Documents implemented (acceptance report in docs) · 5. Founder Finance & Ownership · 6. Operations & Reporting · 7. Security, Final Testing & Release.
 
 Work on one phase at a time and stop for user review at the end of each phase.
 

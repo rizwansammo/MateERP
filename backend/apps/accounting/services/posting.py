@@ -27,6 +27,7 @@ from ..models import (
     TaxRevision,
 )
 from ..money import ZERO, convert, decimal, money, strings
+from .adapters import SUBLEDGER_CONTROLS, is_domain_source
 from .setup import lock_company, rate_for
 
 
@@ -200,9 +201,24 @@ def build_lines(raw, company, on, *, trusted=False, reversal=False):
     return out
 
 
+def _require_poster(request, authority):
+    """Public callers need accounting.manage; domain adapters present their authority."""
+    if authority is None:
+        require(request.user, "accounting.manage")
+    else:
+        authority.verify(request.user)
+
+
+def _owned_by_domain(journal):
+    if is_domain_source(journal.source_type):
+        return True
+    original = journal.reversal_of
+    return bool(original and is_domain_source(original.source_type))
+
+
 @transaction.atomic
-def save_draft(request, data, pk=None, *, trusted=False):
-    require(request.user, "accounting.manage")
+def save_draft(request, data, pk=None, *, trusted=False, authority=None):
+    _require_poster(request, authority)
     company = lock_company()
     journal = JournalEntry.objects.select_for_update().filter(pk=pk).first() if pk else None
     if pk and journal is None:
@@ -259,6 +275,12 @@ def save_draft(request, data, pk=None, *, trusted=False):
         trusted=trusted,
         reversal=bool(journal.reversal_of_id),
     )
+    if authority is None and any(line.account.control in SUBLEDGER_CONTROLS for line in lines):
+        raise BusinessRuleViolation(
+            "Receivable, payable and customer-credit control accounts accept postings only "
+            "from Sales & Billing and Purchases.",
+            code="subledger_control",
+        )
     if not new:
         journal.revision += 1
     journal.save()
@@ -353,9 +375,15 @@ def _finalize(request, journal):
     if check["errors"]:
         raise ValidationError({"lines": check["errors"]})
     _check_carrying(journal)
+    domain = _owned_by_domain(journal)
     for line in journal.lines.select_related("account"):
         if not line.account.is_active or not line.account.is_postable:
             raise BusinessRuleViolation("A journal account is no longer postable.")
+        if not domain and line.account.control in SUBLEDGER_CONTROLS:
+            raise BusinessRuleViolation(
+                "Subledger control accounts accept postings only from their owning workflow.",
+                code="subledger_control",
+            )
     period = AccountingPeriod.objects.select_for_update().get(
         start__lte=journal.posting_date, end__gte=journal.posting_date
     )
@@ -386,8 +414,8 @@ def _finalize(request, journal):
 
 
 @transaction.atomic
-def post_draft(request, pk, key):
-    require(request.user, "accounting.manage")
+def post_draft(request, pk, key, *, authority=None):
+    _require_poster(request, authority)
     lock_company()
     if not isinstance(key, str) or not 8 <= len(key) <= 160:
         raise ValidationError({"posting_key": "Supply a stable posting key of 8–160 characters."})
@@ -410,7 +438,8 @@ def post_draft(request, pk, key):
     if check["errors"]:
         raise ValidationError({"lines": check["errors"]})
     _check_carrying(journal)
-    policy = approvals.policy_for_action("accounting.post")
+    # Domain adapters apply their own approval policy before posting.
+    policy = None if authority else approvals.policy_for_action("accounting.post")
     needs = (
         policy
         and policy.in_force
@@ -449,12 +478,18 @@ def execute_approved(request, approval, approver):
 
 
 @transaction.atomic
-def reverse(request, pk, on, reason, key):
-    require(request.user, "accounting.manage")
+def reverse(request, pk, on, reason, key, *, authority=None):
+    _require_poster(request, authority)
     lock_company()
     original = JournalEntry.objects.filter(pk=pk, status="posted").first()
     if not original:
         raise NotFound()
+    if authority is None and is_domain_source(original.source_type):
+        raise BusinessRuleViolation(
+            "Reverse this entry through its owning workflow.", code="domain_owned"
+        )
+    if authority is not None:
+        authority.verify(request.user, original.source_type)
     existing = JournalEntry.objects.filter(reversal_of=original).first()
     if existing:
         if existing.posting_date != on or existing.reason != reason:
@@ -464,9 +499,13 @@ def reverse(request, pk, on, reason, key):
         if existing.status == "pending" and existing.approval.status in ("rejected", "cancelled"):
             payload = snapshot(existing)
             existing = save_draft(
-                request, {**payload, "reversal_of": original.pk}, existing.pk, trusted=True
+                request,
+                {**payload, "reversal_of": original.pk},
+                existing.pk,
+                trusted=True,
+                authority=authority,
             )
-        return post_draft(request, existing.pk, key)[0]
+        return post_draft(request, existing.pk, key, authority=authority)[0]
     if not reason.strip():
         raise ValidationError({"reason": "Explain the reversal."})
     from apps.banking.models import LedgerMatch
@@ -497,8 +536,9 @@ def reverse(request, pk, on, reason, key):
             "lines": lines,
         },
         trusted=True,
+        authority=authority,
     )
-    return post_draft(request, journal.pk, key)[0]
+    return post_draft(request, journal.pk, key, authority=authority)[0]
 
 
 def post_journal(
@@ -517,11 +557,21 @@ def post_journal(
     adjustment_of=None,
     reason="",
     request_context=None,
+    authority=None,
 ):
-    """Internal adapter contract. No public endpoint accepts trusted source identities."""
+    """Internal adapter contract. No public endpoint accepts trusted source identities.
+
+    Without ``authority`` the caller needs ``accounting.manage`` (Phase 3 behaviour).
+    Domain adapters pass the ``PostingAuthority`` from ``adapters.authorize`` instead.
+    """
     request = request_context or SimpleNamespace(user=actor, META={})
     with transaction.atomic():
-        require(actor, "accounting.manage")
+        if authority is None:
+            require(actor, "accounting.manage")
+            if is_domain_source(source_type):
+                raise PermissionDenied("Domain sources post through their owning workflow.")
+        else:
+            authority.verify(actor, source_type, source_action)
         lock_company()
         supplied = strings(
             {
@@ -550,7 +600,7 @@ def post_journal(
                     "Source identity conflicts with the existing posting.",
                     code="idempotency_conflict",
                 )
-            return post_draft(request, existing.pk, posting_key)[0]
+            return post_draft(request, existing.pk, posting_key, authority=authority)[0]
         raw = [
             {
                 **line,
@@ -573,5 +623,36 @@ def post_journal(
                 "adjustment_of": adjustment_of,
             },
             trusted=True,
+            authority=authority,
         )
-        return post_draft(request, journal.pk, posting_key)[0]
+        journal = post_draft(request, journal.pk, posting_key, authority=authority)[0]
+        if authority is not None and journal.status != "posted":
+            raise BusinessRuleViolation("The domain posting did not complete.")
+        return journal
+
+
+def balance_with_fx(raw, company, on):
+    """Build lines and append the explicit realized FX difference line when needed.
+
+    Returns ``(raw_lines, built_lines, difference, fx_account)``. Treasury and the
+    settlement adapters share it so every realized FX line is derived the same way.
+    """
+    built = build_lines(raw, company, on, trusted=True)
+    difference = sum((line.base_debit - line.base_credit for line in built), ZERO)
+    extra = None
+    if difference:
+        control = "fx_gain" if difference > 0 else "fx_loss"
+        extra = Account.objects.filter(control=control, is_active=True, is_postable=True).first()
+        if not extra:
+            raise BusinessRuleViolation(f"Configure an active {control} control account first.")
+        raw = [
+            *raw,
+            {
+                "account_id": extra.pk,
+                "currency": company.base_currency,
+                "credit" if difference > 0 else "debit": str(abs(difference)),
+                "description": "Explicit realized FX difference",
+            },
+        ]
+        built = build_lines(raw, company, on, trusted=True)
+    return raw, built, difference, extra

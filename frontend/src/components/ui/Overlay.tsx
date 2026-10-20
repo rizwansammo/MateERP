@@ -16,7 +16,7 @@ import { Icon } from './Icon';
 const FOCUSABLE =
   'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
 
-function useDialogBehaviour(open: boolean, onClose: () => void) {
+export function useDialogBehaviour(open: boolean, onClose: () => void) {
   const panelRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef(onClose);
   useEffect(() => {

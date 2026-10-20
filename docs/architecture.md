@@ -26,12 +26,16 @@ Browser ──> Next.js (frontend, :3100) ──/api/*──> Django + DRF (back
 | `apps/core` | Error envelope, request-id middleware and JSON logging, pagination, `client_ip` (trusted-proxy aware), the shared append-only trigger function |
 | `apps/accounts` | `User`, `Role`, `Permission` catalogue, `LoginFailure`; sign-in, sessions, passwords, user and role administration; `create_admin`, `clear_login_locks` |
 | `apps/company` | Singleton `CompanyProfile`, `BusinessSettings` (currency display, tax config, numbering), `ModuleSetting`; reference data |
-| `apps/files` | `StoredFile` in private storage; validated image uploads; purpose-based read policy |
+| `apps/files` | `StoredFile` in private storage; validated/re-encoded images and inspected PDFs; purpose/reference-based read policy |
 | `apps/branding` | `BrandingDraft` (editable) and `BrandingVersion` (immutable, numbered); publish and restore |
 | `apps/approvals` | `ApprovalPolicy` per category, `ApprovalRequest` with a payload snapshot; executor registry |
 | `apps/audit` | `AuditEvent`, append-only; `record()` with redaction |
 | `apps/accounting` | Account hierarchy, fiscal years/periods, journal posting/reversal/approval, idempotency, rate history, tax mappings and posted-ledger reports |
 | `apps/banking` | Bank/cash metadata linked to GL accounts, treasury adapters, bank statements, exact match groups and reconciliation evidence; no independent ledger |
+| `apps/sales` | Customers/contacts, projects/milestones, billing-item catalog and sales orders; exact server-side document calculation |
+| `apps/billing` | Invoices, segregated payment verification, receipts, credit notes, refunds, customer credit, recurring billing and independent AR/credit reconciliation |
+| `apps/purchasing` | Vendors, bills, paid/accrued expenses, reviewed vendor payments, recurring expenses and independent AP reconciliation |
+| `apps/documents` | Frozen official PDFs, resumable rendering, validated financial uploads, private filing and client/vendor virtual folder queries |
 
 **Conventions for domain apps**
 - Shape: `models.py`, `services/` (business rules and transactions), `api/` (thin views and serializers), `tests/`.
@@ -145,9 +149,9 @@ Personal preferences (theme, sidebar, rows per page, landing page) are stored on
 | Domain app | Phase | Owns |
 |---|---|---|
 | `accounting`, `banking` | 3 (implemented) | Central journals and reports; bank/cash adapters and reconciliation |
-| `sales`, `purchasing`, `documents` | 4 | Customers, invoices, payments, receipts, credit notes; vendors, bills, expenses, POs; document storage |
+| `sales`, `billing`, `purchasing`, `documents` | 4 (implemented) | Customers, projects, sales orders, invoices, verified payments, receipts, credits/refunds; vendors, bills, expenses; private documents |
 | `founders`, `ownership` | 5 | Contributions, founder-paid expenses, sharing policies, settlements, loans; shareholders, capital, transfers |
-| `inventory`, `assets`, `budgeting`, `catalog`, `reporting` | 6 | Stock, valuation, fixed assets, depreciation, budgets, cost centres, catalogue, statements |
+| `inventory`, `assets`, `budgeting`, `catalog`, `reporting` | 6 | Purchase orders/procurement, stock, valuation, fixed assets, depreciation, budgets, cost centres, extended catalog and reporting |
 
 ### Financial integrity (Phase 3)
 
@@ -159,7 +163,19 @@ Amounts use `NUMERIC(24,6)`, rates `NUMERIC(30,12)`, Python Decimal and explicit
 
 PostgreSQL independently guards period containment/overlap, closing, financial history, hierarchy meaning, statement completion and consumed reconciliation memberships. Reports include posted entries only. Running ledger balances are SQL-windowed before search/page slicing; multi-query statement reports hold the financial mutex for a coherent snapshot. Hierarchy rows are display subtotals, excluded from grand-total arithmetic.
 
-Founder personal settlements remain outside company obligations. Future financial documents reference immutable branding versions and use this posting engine. No Phase 4 document issuance is included here.
+Founder personal settlements remain outside company obligations. Phase 4 financial documents reference immutable branding versions and use this posting engine.
+
+### Commerce integration (Phase 4)
+
+Only registered source/action adapters can obtain a scoped posting authority. Public journal requests cannot claim commerce source identities, use commerce control accounts or reverse source-owned journals. Each owning domain validates permission, approval, historical settlement and reconciliation restrictions before calling the central engine.
+
+Source records, journal references, document numbers and frozen business/branding snapshots are committed atomically. PDF rendering occurs after the financial transaction and can be retried without issuing another document or posting again. Ready PDFs and their stored-file references are immutable; existing PDFs are served as retained bytes rather than rendered from current settings.
+
+Private storage is shared through the existing volume. Metadata and content use the same purpose/reference authorization; restricted bank proofs additionally require `banking.evidence.view`. Generated invoice, receipt and credit-note PDFs are filed automatically. One multi-invoice receipt is referenced in every associated invoice-year bundle without duplicating the file.
+
+Frontend feature folders `commerce`, `sales`, `purchases` and `filing` share the established UI primitives. Amounts remain exact strings/BigInt; calculation and posting APIs are authoritative. Overview charts derive fiscal series from posted GL lines, including dated reversals. Project profitability uses historical base-currency revenue/costs across currencies, excluding recoverable tax and capitalized assets.
+
+Recurrence uses unique schedule/date runs and explicit owner/runner permission checks. The UI and `run_recurring` command share the same services. No worker, Redis, email delivery, OCR or malware-scanning service is implied.
 
 ## Key decisions
 
@@ -180,7 +196,7 @@ Founder personal settlements remain outside company obligations. Future financia
 1. **Project foundation:** complete
 2. **Authentication and administration:** complete
 3. **Core accounting engine:** implemented; see Phase 3 acceptance report
-4. Billing, expenses and documents
+4. **Billing, expenses and documents:** implemented; see Phase 4 acceptance report
 5. Founder finance and ownership
 6. Business operations and reporting
 7. Security, final testing and release

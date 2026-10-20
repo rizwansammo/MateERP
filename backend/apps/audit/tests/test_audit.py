@@ -64,3 +64,14 @@ def test_audit_requires_permission_and_has_no_write_api(make_user, client_for, a
     viewer = client_for(make_user("v1", "viewer"))
     assert viewer.get(URL).status_code == 403
     assert admin_client.post(URL, {"action": "fake"}, format="json").status_code == 405
+
+
+def test_events_filter_by_target(admin_client, admin_user):
+    from apps.audit.services import record
+
+    record("test.one", target_type="billing.invoice", target_id="7", target_label="Invoice 7")
+    record("test.two", target_type="billing.invoice", target_id="8", target_label="Invoice 8")
+    rows = admin_client.get("/api/v1/audit/events/?target_type=billing.invoice&target_id=7").json()[
+        "results"
+    ]
+    assert [r["action"] for r in rows] == ["test.one"]

@@ -120,6 +120,27 @@ class BusinessSettings(models.Model):
         return "Business settings"
 
 
+class DocumentSequence(models.Model):
+    """Last issued sequence value per numbered document type and numbering scope.
+
+    The scope follows the configured format: per month for {MM}, per year for
+    {YYYY}/{YY}, otherwise one running sequence. Rows are locked while a number is
+    allocated, inside the issuing transaction.
+    """
+
+    key = models.CharField(max_length=32)
+    scope = models.CharField(max_length=7)
+    last_value = models.PositiveBigIntegerField(default=0)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["key", "scope"], name="document_sequence_scope")
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.key}:{self.scope}={self.last_value}"
+
+
 class ModuleSetting(models.Model):
     """Whether an optional module is enabled. Disabling never deletes records."""
 

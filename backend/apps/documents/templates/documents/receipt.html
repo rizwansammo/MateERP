@@ -1,0 +1,74 @@
+{% extends "documents/base.html" %}
+{% block style %}
+@page { size: 794px 600px; margin: 22px; }
+.frame { position: relative; height: 556px; padding: 22px 28px;
+  {% if official %}border: 2px solid {{ b.brand_color }};{% else %}border: 1px solid #E5E7EB;{% endif %} }
+{% if official %}.frame::before { content: ""; position: absolute; top: 5px; right: 5px; bottom: 5px; left: 5px; border: 1px solid {{ b.accent_color }}; }{% endif %}
+.tiny { font-size: 9px; letter-spacing: .14em; text-transform: uppercase; }
+.rows { display: grid; grid-template-columns: 1fr 1fr; column-gap: 28px; align-content: start; flex: none; }
+.rows > div { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px dotted #D1D5DB; }
+.rows > div span:last-child { font-weight: 600; text-align: right; }
+.amount { display: flex; align-items: stretch; gap: 16px; }
+.frame > * + * { margin-top: 14px; }
+.closing { position: absolute; left: 28px; bottom: 22px; width: 694px; border-collapse: collapse; }
+.closing td { vertical-align: bottom; padding: 0; }
+.closing td.left { font-size: 10px; }
+.closing td.left span { display: block; margin-top: 3px; }
+.seal { transform: rotate(-9deg); opacity: .86; margin-bottom: -6px; }
+{% include "documents/signature.css" %}
+{% endblock %}
+{% block body %}
+<div class="frame">
+  {% if official %}
+  <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px;">
+    <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
+      {% if show_logo %}<img src="{{ logo }}" style="height: 44px; max-width: 150px; object-fit: contain;">
+      {% else %}<div style="width: 42px; height: 42px; background: {{ b.brand_color }}; color: #fff; font-weight: 700; font-size: 15px; text-align: center; line-height: 42px;">{{ initials }}</div>{% endif %}
+      <div style="min-width: 0;"><div style="font-size: 15px; font-weight: 700;">{{ legal_name }}</div><div class="muted" style="font-size: 10px;">{{ co_line }}</div></div>
+    </div>
+    <div style="text-align: right;"><div class="tiny muted">Receipt No.</div><div class="nf" style="font-size: 15px; font-weight: 700; color: {{ b.brand_color }};">{{ doc.number }}</div></div>
+  </div>
+  <div style="text-align: center; padding: 6px 0; border-top: 1px solid #E5E7EB; border-bottom: 1px solid #E5E7EB;">
+    <span style="font-size: 17px; font-weight: 700; letter-spacing: .32em; color: {{ b.brand_color }};">OFFICIAL MONEY RECEIPT</span>
+  </div>
+  {% else %}
+  <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; padding-bottom: 12px; border-bottom: 3px solid {{ b.brand_color }};">
+    <div class="col" style="display: flex; flex-direction: column; gap: 6px;">
+      {% if show_logo %}<img src="{{ logo }}" style="height: 38px; max-width: 150px; object-fit: contain; align-self: flex-start;">{% endif %}
+      <div style="font-size: 14px; font-weight: 700;">{{ legal_name }}</div>
+      <div class="muted" style="font-size: 10px;">{{ co_line }}</div>
+    </div>
+    <div style="text-align: right;"><div style="font-size: 22px; font-weight: 700; color: {{ b.brand_color }};">Money Receipt</div><div class="nf" style="font-size: 13px; font-weight: 600;">{{ doc.number }}</div></div>
+  </div>
+  {% endif %}
+
+  <div style="color: #374151;">{{ b.receipt_confirmation }}</div>
+
+  <div class="rows">
+    {% for row in rows %}<div><span class="muted">{{ row.0 }}</span><span{% if row.2 %} class="nf"{% endif %}>{{ row.1 }}</span></div>{% endfor %}
+  </div>
+
+  <div class="amount">
+    <div style="flex: none; background: {{ b.brand_color }}; color: #fff; padding: 10px 16px; display: flex; flex-direction: column; justify-content: center;">
+      <span class="tiny" style="opacity: .8;">Amount received</span>
+      <span class="num" style="font-size: 22px; font-weight: 700;">{{ amount }}</span>
+    </div>
+    <div style="flex: 1; border: 1px solid #E5E7EB; padding: 8px 12px; display: flex; flex-direction: column; justify-content: center;">
+      <span class="tiny muted">In words</span>
+      <span style="font-weight: 600; font-style: italic;">{{ amount_words }}</span>
+    </div>
+  </div>
+
+  <table class="closing"><tr>
+    <td class="left muted">
+      {% for line in balance_lines %}<span>{{ line.0 }} <b class="nf" style="color: #111827;">{{ line.1 }}</b></span>{% endfor %}
+      <span>{{ b.receipt_footer }}</span>
+    </td>
+    <td style="width: 124px; text-align: right;">
+      {% if seal_image %}<img class="seal" src="{{ seal_image }}" style="width: 112px; height: 112px; object-fit: contain;">
+      {% elif seal_svg %}<div class="seal">{{ seal_svg|safe }}</div>{% endif %}
+    </td>
+    {% if b.show_signature_on_receipt %}<td style="width: 196px; padding-left: 6px;">{% include "documents/signature.html" with compact=True %}</td>{% endif %}
+  </tr></table>
+</div>
+{% endblock %}

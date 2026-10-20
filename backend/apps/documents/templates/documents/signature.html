@@ -1,0 +1,6 @@
+<div class="sig" style="width: {% if compact %}190{% else %}200{% endif %}px;">
+  {% if signature %}<img src="{{ signature }}" style="height: {% if compact %}42{% else %}46{% endif %}px; max-width: {% if compact %}170{% else %}180{% endif %}px; object-fit: contain;">
+  {% else %}<div class="script" style="font-size: {% if compact %}{{ signature_size_compact }}{% else %}{{ signature_size }}{% endif %}px; height: {% if compact %}42{% else %}46{% endif %}px;">{{ b.signature_name }}</div>{% endif %}
+  <div class="line" style="padding-top: {% if compact %}3{% else %}4{% endif %}px;">{{ b.signature_name|default:"Authorised signatory" }}</div>
+  <div class="muted" style="font-size: 9.5px;">{{ signature_caption }}</div>
+</div>

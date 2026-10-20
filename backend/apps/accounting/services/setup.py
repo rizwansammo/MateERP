@@ -80,12 +80,26 @@ def save_account(request, data, pk=None):
         setattr(obj, k, v)
     if not obj.normal_side:
         obj.normal_side = "debit" if obj.account_type in ("asset", "expense") else "credit"
-    control_types = {"fx_gain": "revenue", "fx_loss": "expense", "retained_earnings": "equity"}
+    control_types = {
+        "fx_gain": "revenue",
+        "fx_loss": "expense",
+        "retained_earnings": "equity",
+        # Subledger controls: only Sales & Billing / Purchases adapters post here.
+        "receivable": "asset",
+        "payable": "liability",
+        "customer_credit": "liability",
+    }
     if obj.control and (
         obj.control not in control_types or control_types[obj.control] != obj.account_type
     ):
         raise ValidationError(
             {"control": "Choose a control purpose compatible with the account type."}
+        )
+    if obj.control in ("receivable", "payable", "customer_credit") and (
+        obj.currency or not obj.is_postable
+    ):
+        raise ValidationError(
+            {"control": "Subledger control accounts must be postable and multi-currency."}
         )
     if obj.currency:
         quantum(obj.currency)

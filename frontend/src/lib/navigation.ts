@@ -4,7 +4,7 @@
  * modules above CURRENT_PHASE are shown as planned, never as working features.
  */
 
-export const CURRENT_PHASE = 3;
+export const CURRENT_PHASE = 4;
 
 export const PHASES: Record<number, string> = {
   1: 'Project Foundation',
@@ -99,7 +99,7 @@ export const NAVIGATION: NavGroup[] = [
           sub('expenses', 'Expenses'),
           sub('recurring', 'Recurring Expenses'),
           sub('vendors', 'Vendors & Suppliers'),
-          sub('orders', 'Purchase Orders', { module: 'procurement' }),
+          sub('orders', 'Purchase Orders', { module: 'procurement', phase: 6 }),
           sub('bills', 'Vendor Bills'),
           sub('history', 'Purchase History'),
         ],
@@ -230,6 +230,7 @@ export const NAVIGATION: NavGroup[] = [
     items: [
       {
         id: 'vendor-documents',
+        permissions: ['finance.view', 'documents.vendor.view'],
         label: 'Vendor Documents',
         icon: 'folder_open',
         phase: 4,
@@ -237,6 +238,7 @@ export const NAVIGATION: NavGroup[] = [
       },
       {
         id: 'client-documents',
+        permissions: ['finance.view', 'documents.client.view'],
         label: 'Client Documents',
         icon: 'folder_shared',
         phase: 4,

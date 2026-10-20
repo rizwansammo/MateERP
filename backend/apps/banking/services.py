@@ -7,8 +7,8 @@ from rest_framework.exceptions import NotFound, ValidationError
 from apps.accounting.models import Account, JournalLine
 from apps.accounting.money import ZERO, money, strings
 from apps.accounting.services.posting import (
+    balance_with_fx,
     bank_position,
-    build_lines,
     fingerprint,
     line_payload,
     post_journal,
@@ -159,23 +159,7 @@ def treasury(request, data, *, preview=False):
                 "credit" if incoming else "debit": str(base_amount),
             },
         ]
-    built = build_lines(raw, company, on)
-    difference = sum((line.base_debit - line.base_credit for line in built), ZERO)
-    extra = None
-    if difference:
-        control = "fx_gain" if difference > 0 else "fx_loss"
-        extra = Account.objects.filter(control=control, is_active=True, is_postable=True).first()
-        if not extra:
-            raise BusinessRuleViolation(f"Configure an active {control} control account first.")
-        raw.append(
-            {
-                "account_id": extra.pk,
-                "currency": company.base_currency,
-                "credit" if difference > 0 else "debit": str(abs(difference)),
-                "description": "Explicit realized FX difference",
-            }
-        )
-        built = build_lines(raw, company, on)
+    raw, built, difference, extra = balance_with_fx(raw, company, on)
     result = strings(
         {
             "lines": [line_payload(line) for line in built],

@@ -85,27 +85,39 @@ const CURRENCY_WORDS: Record<string, [string, string]> = {
 
 /** Amount in words, using lakh/crore for South Asian currencies. */
 export function amountInWords(minor: number, currency: string): string {
-  let n = Math.floor(Math.abs(minor) / 100);
-  const fraction = Math.abs(minor) % 100;
+  if (!Number.isSafeInteger(minor)) throw new Error('Amounts must be integer minor units.');
+  return wordsForMinor(BigInt(minor), currency, 2);
+}
+
+function wholeWords(n: bigint, southAsian: boolean): string {
+  if (n < 1000n) return belowThousand(Number(n)) || 'Zero';
+  const scales: [bigint, string][] = southAsian
+    ? [[10_000_000n, 'Crore'], [100_000n, 'Lakh'], [1000n, 'Thousand']]
+    : [[10n ** 18n, 'Quintillion'], [10n ** 15n, 'Quadrillion'], [10n ** 12n, 'Trillion'], [10n ** 9n, 'Billion'], [1_000_000n, 'Million'], [1000n, 'Thousand']];
   const parts: string[] = [];
-  if (currency === 'BDT' || currency === 'INR') {
-    const scales: [number, string][] = [[10_000_000, 'Crore'], [100_000, 'Lakh'], [1000, 'Thousand']];
-    for (const [size, name] of scales) {
-      const count = Math.floor(n / size);
-      if (count) parts.push(`${count >= 100 ? belowThousand(count) : belowHundred(count)} ${name}`);
-      n %= size;
-    }
-  } else {
-    const scales: [number, string][] = [[1_000_000_000, 'Billion'], [1_000_000, 'Million'], [1000, 'Thousand']];
-    for (const [size, name] of scales) {
-      const count = Math.floor(n / size);
-      if (count) parts.push(`${belowThousand(count)} ${name}`);
-      n %= size;
-    }
+  for (const [size, name] of scales) {
+    const count = n / size;
+    if (count) parts.push(`${wholeWords(count, southAsian)} ${name}`);
+    n %= size;
   }
-  if (n) parts.push(belowThousand(n));
-  const words = parts.join(' ') || 'Zero';
+  if (n) parts.push(belowThousand(Number(n)));
+  return parts.join(' ');
+}
+function wordsForMinor(value: bigint, currency: string, places: number): string {
+  const abs = value < 0n ? -value : value;
+  const scale = 10n ** BigInt(places);
+  const words = wholeWords(abs / scale, currency === 'BDT' || currency === 'INR');
+  const fraction = Number(abs % scale);
   const [major, minorName] = CURRENCY_WORDS[currency] ?? [currency, 'Cents'];
   const tail = fraction ? ` and ${belowHundred(fraction)} ${minorName}` : '';
   return currency === 'BDT' ? `Taka ${words}${tail} Only` : `${words} ${major}${tail} Only`;
+}
+
+/** Issued amounts stay exact, including amounts beyond Number.MAX_SAFE_INTEGER. */
+export function amountInWordsDecimal(value: string, currency: string): string {
+  const places = new Set(['JPY', 'KRW', 'VND', 'CLP', 'ISK', 'UGX', 'XAF', 'XOF']).has(currency) ? 0 : 2;
+  if (!/^-?\d+(\.\d+)?$/.test(value)) throw new Error('Invalid amount.');
+  const [whole = '0', fraction = ''] = value.replace('-', '').split('.');
+  if (fraction.slice(places).replace(/0/g, '')) throw new Error('Invalid currency precision.');
+  return wordsForMinor(BigInt(whole + fraction.padEnd(places, '0').slice(0, places)), currency, places);
 }

@@ -15,6 +15,13 @@ from .models import FilePurpose, StoredFile
 # the places that reference the given file id.
 ReferenceResolver = Callable[[StoredFile], set[str]]
 _resolvers: list[ReferenceResolver] = []
+# Purposes owned by other apps (documents) decide access with their own policy.
+PurposePolicy = Callable[[object, StoredFile], bool]
+_purpose_policies: dict[str, PurposePolicy] = {}
+
+
+def register_purpose_policy(purpose: str, policy: PurposePolicy) -> None:
+    _purpose_policies[purpose] = policy
 
 
 def register_reference_resolver(resolver: ReferenceResolver) -> None:
@@ -48,4 +55,5 @@ def can_read(user, stored: StoredFile) -> bool:
         # Signatures and seals are sensitive document-authentication assets.
         return "branding.manage" in perms
 
-    return False
+    policy = _purpose_policies.get(stored.purpose)
+    return bool(policy and policy(user, stored))

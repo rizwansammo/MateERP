@@ -27,7 +27,38 @@ CATEGORIES: tuple[PolicyCategory, ...] = (
         True,
         False,
     ),
-    PolicyCategory("expenses", "Expenses", "Expenses at or above the threshold.", 4, False, True),
+    PolicyCategory(
+        "expenses",
+        "Expenses & vendor bills",
+        "Posting expenses and vendor bills at or above the threshold.",
+        4,
+        True,
+        True,
+    ),
+    PolicyCategory(
+        "invoices",
+        "Client invoices",
+        "Approving client invoices at or above the threshold before issue.",
+        4,
+        True,
+        True,
+    ),
+    PolicyCategory(
+        "credits_refunds",
+        "Credit notes & refunds",
+        "Issuing credit notes and paying refunds at or above the threshold.",
+        4,
+        True,
+        True,
+    ),
+    PolicyCategory(
+        "vendor_payments",
+        "Vendor payments",
+        "Paying vendors at or above the threshold.",
+        4,
+        True,
+        True,
+    ),
     PolicyCategory(
         "purchase_orders",
         "Purchase orders",
@@ -39,9 +70,9 @@ CATEGORIES: tuple[PolicyCategory, ...] = (
     PolicyCategory(
         "client_payments",
         "Client payments",
-        "Verification of recorded client payments.",
+        "Verification of recorded client payments at or above the threshold.",
         4,
-        False,
+        True,
         True,
     ),
     PolicyCategory(
@@ -67,4 +98,11 @@ BY_KEY = {c.key: c for c in CATEGORIES}
 ACTIONS: dict[str, str] = {
     "branding.publish": "admin_changes",
     "accounting.post": "financial_adjustments",
+    "invoice.approve": "invoices",
+    "payment.verify": "client_payments",
+    "credit_note.issue": "credits_refunds",
+    "refund.pay": "credits_refunds",
+    "vendor_bill.post": "expenses",
+    "expense.post": "expenses",
+    "vendor_payment.post": "vendor_payments",
 }

@@ -1,12 +1,11 @@
 /* eslint-disable @next/next/no-img-element -- documents render private, auth-gated assets */
 import type { CSSProperties } from 'react';
 
-import { formatDate } from '@/lib/format';
-
 import { CompanySeal } from './CompanySeal';
 import { type DocumentBranding, Signature, documentFonts, initialsOf } from './InvoiceDocument';
-import { type MoneyFormat, amountInWords, formatAmount } from './money';
-import { SAMPLE_RECEIPT, type SampleInvoice, computeTotals } from './sample';
+import { type MoneyFormat, amountInWords } from './money';
+import type { SampleInvoice } from './sample';
+import { type ReceiptView, sampleReceiptView } from './view';
 
 /*
  * Official money receipt — Official (framed) and Compact layouts from the
@@ -15,14 +14,17 @@ import { SAMPLE_RECEIPT, type SampleInvoice, computeTotals } from './sample';
 
 interface ReceiptDocumentProps {
   branding: DocumentBranding;
-  invoice: SampleInvoice;
+  /** Sample content (branding previews). */
+  invoice?: SampleInvoice;
+  /** Server-formatted content (issued receipts). Takes precedence. */
+  view?: ReceiptView;
   invoiceNumber: string;
   receiptNumber: string;
   format?: MoneyFormat;
   watermark?: string;
 }
 
-export function ReceiptDocument({ branding, invoice, invoiceNumber, receiptNumber, format, watermark }: ReceiptDocumentProps) {
+export function ReceiptDocument({ branding, invoice, view, invoiceNumber, receiptNumber, format, watermark }: ReceiptDocumentProps) {
   const { config: b, company: co, logoUrl } = branding;
   const { ff, nf } = documentFonts(b);
   const brand = b.brand_color;
@@ -31,23 +33,10 @@ export function ReceiptDocument({ branding, invoice, invoiceNumber, receiptNumbe
   const legalName = co.legal_name || co.display_name;
   const showLogo = b.show_logo_on_receipt && Boolean(logoUrl);
   const coLine = [co.address_lines.join(', '), co.phone, co.tax_id].filter(Boolean).join(' · ');
-  const cur = invoice.currency;
+  const cur = invoice?.currency ?? 'BDT';
   const fmt: MoneyFormat = format ?? { currency: cur, symbol: cur, display: 'code', grouping: 'international' };
-  const money = (m: number) => formatAmount(m, fmt);
-  const total = computeTotals(invoice.lines).total;
-  const amount = Math.min(SAMPLE_RECEIPT.amountMinor, total);
-  const balance = total - amount;
-
-  const rows: { l: string; v: string; mono?: boolean }[] = [
-    { l: 'Received from', v: invoice.customer.name },
-    { l: 'Payment date', v: formatDate(invoice.issueDate.toISOString()) },
-    { l: 'Against invoice', v: invoiceNumber, mono: true },
-    { l: 'Payment method', v: SAMPLE_RECEIPT.method },
-    { l: 'Invoice total', v: money(total), mono: true },
-    { l: 'Received into', v: SAMPLE_RECEIPT.account },
-    { l: 'Currency', v: cur },
-    { l: 'Reference', v: SAMPLE_RECEIPT.reference, mono: true },
-  ];
+  const v = view ?? sampleReceiptView(invoice!, invoiceNumber, fmt, amountInWords);
+  const rows = v.rows.map((r) => ({ l: r.label, v: r.value, mono: r.mono }));
   const seal = b.seal;
   const sealNode =
     seal.mode === 'image' && branding.sealImageUrl ? (
@@ -117,20 +106,22 @@ export function ReceiptDocument({ branding, invoice, invoiceNumber, receiptNumbe
         <div style={{ display: 'flex', alignItems: 'stretch', gap: '16px' }}>
           <div style={{ flex: 'none', background: brand, color: '#fff', padding: '10px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
             <span style={{ ...tiny, opacity: 0.8 }}>Amount received</span>
-            <span style={{ fontFamily: nf, fontSize: '22px', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{money(amount)}</span>
+            <span style={{ fontFamily: nf, fontSize: '22px', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{v.amount}</span>
           </div>
           <div style={{ flex: 1, border: '1px solid #E5E7EB', padding: '8px 12px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
             <span style={{ ...tiny, color: '#6B7280' }}>In words</span>
-            <span style={{ fontWeight: 600, fontStyle: 'italic', textWrap: 'pretty' }}>{amountInWords(amount, cur)}</span>
+            <span style={{ fontWeight: 600, fontStyle: 'italic', textWrap: 'pretty' }}>{v.amountWords}</span>
           </div>
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: '20px', marginTop: 'auto' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', color: '#6B7280', fontSize: '10px', maxWidth: '330px' }}>
-            <span>
-              Invoice balance after this receipt:{' '}
-              <b style={{ color: '#111827', fontFamily: nf }}>{money(balance)}{balance <= 0 ? ' — invoice fully settled' : ''}</b>
-            </span>
+            {v.balanceLines.map((line) => (
+              <span key={line.label}>
+                {line.label}{' '}
+                <b style={{ color: '#111827', fontFamily: nf }}>{line.value}</b>
+              </span>
+            ))}
             <span>{b.receipt_footer}</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: '6px' }}>

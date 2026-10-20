@@ -1,0 +1,3 @@
+.sig { flex: none; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.sig .line { width: 100%; border-top: 1px solid #9CA3AF; text-align: center; font-size: 10.5px; font-weight: 600; }
+.sig .script { font-family: "Signature", cursive; line-height: 1; color: #1F2A44; display: flex; align-items: flex-end; justify-content: center; white-space: nowrap; }

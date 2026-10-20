@@ -200,6 +200,35 @@ def render_number(fmt: str, on: date, sequence: int) -> str:
     return _NUMBER_TOKEN.sub(replace, fmt)
 
 
+def next_number(key: str, on: date, taken) -> str:
+    """Allocate the next document number for ``key`` on ``on``.
+
+    Call inside the issuing transaction. ``taken(number)`` reports whether the
+    number already exists, so a changed format never reuses an issued number.
+    """
+    from .models import DocumentSequence
+
+    if not transaction.get_connection().in_atomic_block:
+        raise RuntimeError("Document numbers are allocated inside the issuing transaction.")
+    fmt = get_business_settings().numbering[key]
+    scope = (
+        f"{on.year:04d}-{on.month:02d}"
+        if "{MM}" in fmt
+        else f"{on.year:04d}"
+        if "{YY" in fmt
+        else "all"
+    )
+    DocumentSequence.objects.get_or_create(key=key, scope=scope)
+    seq = DocumentSequence.objects.select_for_update().get(key=key, scope=scope)
+    while True:
+        seq.last_value += 1
+        number = render_number(fmt, on, seq.last_value)
+        if not taken(number):
+            break
+    seq.save(update_fields=["last_value"])
+    return number
+
+
 def validate_numbering(numbering: dict, current: dict | None = None) -> dict[str, str]:
     """Validate document number formats; reject ambiguous or colliding formats.
 

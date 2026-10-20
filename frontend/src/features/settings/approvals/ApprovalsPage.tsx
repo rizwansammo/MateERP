@@ -54,6 +54,7 @@ function RequestsTable() {
     invalidate('/branding/');
     invalidate('/accounting/');
     invalidate('/banking/');
+      for (const prefix of ['/sales/', '/billing/', '/purchasing/', '/documents/']) invalidate(prefix);
     toast(message);
   };
 
@@ -83,6 +84,7 @@ function RequestsTable() {
                 <TD>
                   <div className="font-medium">{r.title}</div>
                   {r.summary.journal_id && <Link href={`/banking/journals/${r.summary.journal_id}`} className="text-[12px]">Review journal lines →</Link>}
+                    {r.summary.record_url && <Link href={r.summary.record_url} className="text-[12px]">Review financial record →</Link>}
                   {r.request_reason && <div className="text-[11.5px] text-tx3">“{r.request_reason}”</div>}
                 </TD>
                 <TD>

@@ -18,7 +18,7 @@ _ENV_FILE = BASE_DIR.parent / ".env"
 if _ENV_FILE.is_file():
     environ.Env.read_env(_ENV_FILE)
 
-MATEERP_VERSION = "0.3.0"
+MATEERP_VERSION = "0.4.0"
 MATEERP_ENVIRONMENT = "base"
 
 SECRET_KEY = env("DJANGO_SECRET_KEY", default="")
@@ -42,6 +42,10 @@ INSTALLED_APPS = [
     "apps.branding",
     "apps.accounting",
     "apps.banking",
+    "apps.sales",
+    "apps.billing",
+    "apps.purchasing",
+    "apps.documents",
 ]
 
 MIDDLEWARE = [
@@ -171,6 +175,22 @@ SPECTACULAR_SETTINGS = {
         "HealthStatusEnum": ["ok", "unavailable"],
         "ApprovalStatusEnum": "apps.approvals.models.ApprovalRequest.Status",
         "AuditOutcomeEnum": "apps.audit.models.AuditEvent.Outcome",
+        "DiscountTypeEnum": [("percent", "Percent"), ("fixed", "Fixed")],
+        "PaymentMethodEnum": "apps.purchasing.models.METHODS",
+        "PdfStatusEnum": "apps.billing.models.PDF_STATUSES",
+        "InvoiceStatusEnum": "apps.billing.models.Invoice.Status",
+        "ClientPaymentStatusEnum": "apps.billing.models.CustomerPayment.Status",
+        "ReceiptStatusEnum": "apps.billing.models.MoneyReceipt.Status",
+        "CreditNoteStatusEnum": "apps.billing.models.CreditNote.Status",
+        "RefundStatusEnum": "apps.billing.models.Refund.Status",
+        "ScheduleStatusEnum": "apps.billing.models.RecurringInvoiceSchedule.Status",
+        "ScheduleFrequencyEnum": "apps.billing.models.RecurringInvoiceSchedule.Frequency",
+        "InvoiceRunStatusEnum": "apps.billing.models.RecurringInvoiceRun.Status",
+        "ProjectStatusEnum": "apps.sales.models.Project.Status",
+        "SalesOrderStatusEnum": "apps.sales.models.SalesOrder.Status",
+        "PayableStatusEnum": "apps.purchasing.models.VendorBill.Status",
+        "VendorPaymentStatusEnum": "apps.purchasing.models.VendorPayment.Status",
+        "ScheduleTransitionEnum": ["active", "paused", "cancelled"],
     },
 }
 

@@ -14,7 +14,9 @@ def test_all_categories_listed_with_honest_enforcement(admin_client):
     assert [p["category"] for p in policies] == [c.key for c in CATEGORIES]
     enforced = {p["category"]: p["enforced"] for p in policies}
     assert enforced["admin_changes"] is True
-    assert enforced["expenses"] is False  # stored now, enforced by Phase 4
+    for phase4 in ("expenses", "invoices", "client_payments", "credits_refunds", "vendor_payments"):
+        assert enforced[phase4] is True
+    assert enforced["purchase_orders"] is False  # stored now, enforced by Phase 6
 
 
 def test_update_policy_is_audited(admin_client):

@@ -57,8 +57,8 @@ export function Sidebar({ open, onNavigate }: SidebarProps) {
 
       <div className="flex flex-none items-center justify-between gap-2 border-t border-sb-bd px-3 py-2.5 compact:justify-center">
         <div className="flex min-w-0 flex-col compact:hidden">
-          <span className="text-[10.5px] text-sb-tx2">MateERP 0.3.0</span>
-          <span className="text-[10px] text-sb-faint">Phase 3 · Accounting build</span>
+          <span className="text-[10.5px] text-sb-tx2">MateERP 0.4.0</span>
+          <span className="text-[10px] text-sb-faint">Phase 4 · Billing & documents</span>
         </div>
         <button
           type="button"

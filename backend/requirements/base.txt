@@ -5,3 +5,5 @@ django-environ==0.14.0
 psycopg[binary]==3.3.6
 gunicorn==26.2.0
 Pillow==13.0.0
+weasyprint==70.0
+pypdf==6.21.1
