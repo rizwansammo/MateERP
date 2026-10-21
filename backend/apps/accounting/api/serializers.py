@@ -65,9 +65,22 @@ class JournalInput(serializers.Serializer):
 
 
 class LineSerializer(serializers.ModelSerializer):
+    dimensions = serializers.SerializerMethodField()
     account_id = serializers.IntegerField()
     account_name = serializers.CharField(source="account.name")
     account_code = serializers.CharField(source="account.code")
+
+    def get_dimensions(self, obj) -> dict:
+        from apps.accounts.authorization import get_permission_codes
+
+        request = self.context.get("request")
+        if request and "founder.view" in get_permission_codes(request.user):
+            return obj.dimensions
+        return {
+            key: value
+            for key, value in obj.dimensions.items()
+            if key not in {"founder", "founder_transaction", "obligation"}
+        }
 
     class Meta:
         model = JournalLine

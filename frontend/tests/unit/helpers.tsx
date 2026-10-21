@@ -10,6 +10,8 @@ export const ALL_PERMISSIONS = [
   'expenses.manage', 'banking.evidence.view', 'reports.export', 'founder.view', 'founder.transactions.manage',
   'founder.settlements.manage', 'ownership.manage', 'procurement.manage', 'inventory.manage', 'assets.manage',
   'budgets.manage',
+  'founder.verify', 'founder.liabilities.manage', 'founder.personal.view', 'founder.personal.confirm',
+  'founder.attest', 'founder.planning.manage', 'ownership.view', 'ownership.approve', 'ownership.consent', 'ownership.attest',
   'accounting.approve', 'accounting.periods.manage',
   'sales.manage', 'invoices.issue', 'payments.record', 'credit_notes.manage', 'vendors.manage',
   'bills.manage', 'vendor_payments.manage', 'documents.client.view', 'documents.vendor.view', 'documents.manage',

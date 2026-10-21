@@ -77,8 +77,19 @@ MateERP is NetaMate's commercial ERP. This repository is the **production applic
 - Project profitability uses posted historical base-currency GL costs/revenue across currencies, excluding recoverable tax/capital assets. Issued project billing locks financial identity.
 - Browser financial fixtures run only through `scripts/e2e.ps1` in fresh isolated databases on backend 8101, never the development installation. Retain checkpoints in `docs/phase-04-progress.md` and record actual results.
 
+## Phase 5 conventions
+- `company.FinancialParty` identifies founders, shareholders and partners, with optional ERP accounts. Never seed real participants, legal shares or balances.
+- `founders` owns corporate source records, exact liabilities and allocations, separate personal sharing/confirmed transfers, immutable forecasts and verified-funding designations. `ownership` owns provisional agreement amendments and documented formal register events.
+- Corporate posting uses the registered `founder_transaction` authority and the central ledger. A recorder cannot verify their own transaction. Reclassification/reassignment preserves one original obligation per source and its `recovery_origin`; recovery limits apply across the entire split/reclassification history.
+- Personal payments never silently clear company liabilities. Overlapping recovery blocks reimbursement until a confirmed return or an explicitly authorized, independently verified and audited corporate resolution exists.
+- Equal/custom/provisional/formal sharing policies are effective-dated. Allocation snapshots remain frozen. Promises, forecast targets, reserve designations and personal transfers never create GL cash or expenses.
+- Forecasts reuse actual recurrence identities, exact tax and FX helpers. New source selection or policy changes create new snapshots. Reserve consumption links actual posted payments; partial use/releases and retained-funds rollover are audited and never duplicate cash.
+- Provisional 50:50 → 40:40:20 amendments do not issue formal units. Formal transfers/issuances require frozen evidence, affected-party consent, distinct independent governance votes and explicit documented confirmation. Linked shareholders act as themselves; external attestations identify the authorized operator and evidence.
+- New sensitive permissions are reviewed explicitly; existing non-admin grants are not silently expanded. Private founder/personal/ownership evidence is purpose/reference scoped. General journal responses mask founder identity dimensions unless authorized, without altering financial totals.
+- Keep `docs/phase-05-progress.md` current; use isolated E2E fixtures only. Do not begin Phase 6 without owner approval.
+
 ## Roadmap
-1. Foundation ✅ · 2. Auth & Administration ✅ · 3. Core Accounting Engine completed · 4. Billing, Expenses & Documents implemented (acceptance report in docs) · 5. Founder Finance & Ownership · 6. Operations & Reporting · 7. Security, Final Testing & Release.
+1. Foundation ✅ · 2. Auth & Administration ✅ · 3. Core Accounting Engine completed · 4. Billing, Expenses & Documents implemented · 5. Founder Finance & Ownership implemented and verified (acceptance reports in docs) · 6. Operations & Reporting · 7. Security, Final Testing & Release.
 
 Work on one phase at a time and stop for user review at the end of each phase.
 

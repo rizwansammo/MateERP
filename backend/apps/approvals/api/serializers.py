@@ -28,6 +28,7 @@ class ApprovalPolicySerializer(serializers.ModelSerializer):
             "approver_role",
             "amount_threshold",
             "allow_self_approval",
+            "required_approvals",
             "notes",
             "updated_at",
         ]
@@ -50,6 +51,7 @@ class ApprovalPolicySerializer(serializers.ModelSerializer):
 
 
 class ApprovalPolicyUpdateSerializer(serializers.Serializer):
+    required_approvals = serializers.IntegerField(min_value=1, max_value=20, required=False)
     is_required = serializers.BooleanField(required=False)
     is_active = serializers.BooleanField(required=False)
     approver_role = serializers.PrimaryKeyRelatedField(
@@ -68,6 +70,8 @@ class PersonSerializer(serializers.Serializer):
 
 
 class ApprovalRequestSerializer(serializers.ModelSerializer):
+    vote_count = serializers.SerializerMethodField()
+    required_approvals = serializers.SerializerMethodField()
     requested_by = PersonSerializer(read_only=True)
     reviewed_by = PersonSerializer(read_only=True, allow_null=True)
     can_decide = serializers.SerializerMethodField()
@@ -90,6 +94,8 @@ class ApprovalRequestSerializer(serializers.ModelSerializer):
             "result_reference",
             "can_decide",
             "summary",
+            "vote_count",
+            "required_approvals",
         ]
         read_only_fields = fields
 
@@ -99,12 +105,25 @@ class ApprovalRequestSerializer(serializers.ModelSerializer):
         user = self.context.get("user")
         return bool(user) and can_decide(user, obj)[0]
 
+    def get_vote_count(self, obj) -> int:
+        from apps.approvals.services import eligible_votes
+
+        return len(eligible_votes(obj))
+
+    def get_required_approvals(self, obj) -> int:
+        from apps.approvals.services import approval_quorum
+
+        return approval_quorum(obj)
+
     def get_summary(self, obj) -> dict:
         # Only non-sensitive descriptive fields of the captured payload.
         payload = obj.payload or {}
         if obj.action == "accounting.post":
             return {"journal_id": payload.get("journal_id", "")}
         targets = {
+            "ownership.review": ("proposal_id", "/ownership/history/"),
+            "founder.post": ("transaction_id", "/founder/contributions/"),
+            "founder.policy": ("policy_id", "/founder/sharing"),
             "invoice.approve": ("invoice_id", "/sales/invoices/"),
             "payment.verify": ("payment_id", "/sales/payments/"),
             "credit_note.issue": ("credit_note_id", "/sales/credits"),

@@ -88,7 +88,7 @@ CATEGORIES: tuple[PolicyCategory, ...] = (
         "Ownership changes",
         "Share transfers, issuance and capital changes.",
         5,
-        False,
+        True,
         False,
     ),
 )
@@ -96,6 +96,9 @@ BY_KEY = {c.key: c for c in CATEGORIES}
 
 # action code -> policy category
 ACTIONS: dict[str, str] = {
+    "ownership.review": "ownership_changes",
+    "founder.post": "financial_adjustments",
+    "founder.policy": "admin_changes",
     "branding.publish": "admin_changes",
     "accounting.post": "financial_adjustments",
     "invoice.approve": "invoices",

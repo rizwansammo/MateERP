@@ -74,7 +74,7 @@ export function SidebarNav({ pathname, openOverrides, onToggle, onNavigate }: Si
             return (
               <div key={item.id}>
                 <Link
-                  href={itemHref(item)}
+                  href={item.id==='founder' && !can('founder.view') ? '/founder/settlements' : item.id==='ownership' && !can('ownership.view') && !can('ownership.manage') ? '/ownership/history' : itemHref(item)}
                   onClick={onItemClick}
                   aria-current={active ? 'page' : undefined}
                   aria-expanded={hasSubs ? isOpen : undefined}

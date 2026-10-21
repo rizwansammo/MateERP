@@ -32,7 +32,7 @@ export function useApi<T>(path: string | null) {
 
 /** Refetch every commercial and financial view after a mutation. */
 export function refreshCommerce() {
-  for (const prefix of ['/sales/', '/billing/', '/purchasing/', '/documents/', '/accounting/', '/banking/', '/approvals/', '/audit/']) {
+  for (const prefix of ['/sales/', '/billing/', '/purchasing/', '/documents/', '/accounting/', '/banking/', '/approvals/', '/audit/', '/founders/', '/ownership/']) {
     invalidate(prefix);
   }
 }

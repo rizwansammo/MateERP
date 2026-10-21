@@ -49,8 +49,9 @@ export function LoginForm({ next, expired }: LoginFormProps) {
       const destination = user.must_change_password
         ? '/account/password'
         : safeNext(next, user.preferences.landing_page ?? '/dashboard');
+      // The successful response has set the session cookie. Navigating loads
+      // the protected server layout; refreshing here can cancel that navigation.
       router.replace(destination);
-      router.refresh();
     } catch (err) {
       setPassword('');
       if (err instanceof ApiError && err.kind === 'http') setError(err.message);

@@ -20,11 +20,12 @@ from apps.audit.services import record
 from apps.core.exceptions import BusinessRuleViolation
 
 from .catalog import ACTIONS, BY_KEY, CATEGORIES
-from .models import ApprovalPolicy, ApprovalRequest
+from .models import ApprovalPolicy, ApprovalRequest, ApprovalVote
 
 # executor(request, approval_request, approver) -> result reference string
 Executor = Callable[[HttpRequest, ApprovalRequest, User], str]
 _executors: dict[str, Executor] = {}
+_decline_handlers: dict[str, Callable] = {}
 # Permissions a decider must hold, and actions whose execution posts financial effects
 # (those take the company financial lock before the approval row).
 _decider_permissions: dict[str, tuple[str, ...]] = {}
@@ -37,8 +38,11 @@ def register_executor(
     *,
     decider_permissions: tuple[str, ...] = (),
     financial: bool = False,
+    on_declined: Callable | None = None,
 ) -> None:
     _executors[action] = executor
+    if on_declined is not None:
+        _decline_handlers[action] = on_declined
     if decider_permissions:
         _decider_permissions[action] = tuple(decider_permissions)
     if financial:
@@ -47,7 +51,9 @@ def register_executor(
 
 def ensure_policies() -> None:
     for category in CATEGORIES:
-        ApprovalPolicy.objects.get_or_create(category=category.key)
+        ApprovalPolicy.objects.get_or_create(
+            category=category.key, defaults={"is_required": category.key == "ownership_changes"}
+        )
 
 
 def policy_for_action(action: str) -> ApprovalPolicy | None:
@@ -71,6 +77,7 @@ def _policy_snapshot(policy: ApprovalPolicy) -> dict:
             str(policy.amount_threshold) if policy.amount_threshold is not None else None
         ),
         "allow_self_approval": policy.allow_self_approval,
+        "required_approvals": policy.required_approvals,
         "notes": policy.notes,
     }
 
@@ -79,6 +86,20 @@ def _policy_snapshot(policy: ApprovalPolicy) -> dict:
 def update_policy(request: HttpRequest, policy: ApprovalPolicy, data: dict) -> ApprovalPolicy:
     policy = ApprovalPolicy.objects.select_for_update().get(pk=policy.pk)
     category = BY_KEY[policy.category]
+    if category.key == "ownership_changes" and (
+        data.get("is_required") is False or data.get("is_active") is False
+    ):
+        raise exceptions.ValidationError(
+            {"is_required": "Ownership authorization and independent review are mandatory."}
+        )
+    if not 1 <= data.get("required_approvals", policy.required_approvals) <= 20:
+        raise exceptions.ValidationError(
+            {"required_approvals": "Choose between 1 and 20 distinct approvers."}
+        )
+    if category.key == "ownership_changes" and data.get("allow_self_approval"):
+        raise exceptions.ValidationError(
+            {"allow_self_approval": "Ownership requires independent approval."}
+        )
     if not category.supports_threshold and data.get("amount_threshold") is not None:
         raise exceptions.ValidationError(
             {"amount_threshold": ["This category does not use an amount threshold."]}
@@ -124,6 +145,7 @@ def submit(
                 subject_key=subject_key,
                 title=title,
                 payload=payload,
+                policy_snapshot=frozen_policy(action),
                 requested_by=request.user,
                 request_reason=reason,
             )
@@ -142,10 +164,47 @@ def submit(
     return approval
 
 
+def frozen_policy(action):
+    policy = policy_for_action(action)
+    if policy is None:
+        return {}
+    # Existing Phase 2–4 requests keep their current policy behavior. Ownership
+    # freezes governance so an edit cannot reduce the votes a proposal needs.
+    if policy.category != "ownership_changes":
+        return {}
+    return {
+        "required_approvals": policy.required_approvals,
+        "approver_role_id": policy.approver_role_id,
+        "allow_self_approval": False,
+    }
+
+
+def eligible_votes(approval):
+    return [
+        v
+        for v in approval.votes.select_related("actor", "actor__role")
+        if v.actor.is_active
+        and not v.actor.must_change_password
+        and _eligible_decider(v.actor, approval)[0]
+    ]
+
+
+def approval_quorum(approval):
+    return int(approval.policy_snapshot.get("required_approvals", 1))
+
+
 def can_decide(user: User, approval: ApprovalRequest) -> tuple[bool, str]:
     """Whether ``user`` may decide ``approval`` (and why not)."""
     if approval.status != ApprovalRequest.Status.PENDING:
         return False, "This request has already been decided."
+    if approval.votes.filter(actor=user).exists():
+        return False, "Your approval has already been recorded."
+    return _eligible_decider(user, approval)
+
+
+def _eligible_decider(user, approval):
+    if not user.is_active or user.must_change_password:
+        return False, "An active account is required."
     if approval.action == "accounting.post" and not {
         "finance.view",
         "accounting.approve",
@@ -162,11 +221,15 @@ def can_decide(user: User, approval: ApprovalRequest) -> tuple[bool, str]:
     )
     if policy is None:
         return False, "No approval policy exists for this request."
-    if approval.requested_by_id == user.pk and not policy.allow_self_approval:
+    snapshot = approval.policy_snapshot
+    if approval.requested_by_id == user.pk and not snapshot.get(
+        "allow_self_approval", policy.allow_self_approval
+    ):
         return False, "You cannot approve your own request."
     if is_administrator(user):
         return True, ""
-    if policy.approver_role_id and user.role_id == policy.approver_role_id:
+    role_id = snapshot.get("approver_role_id", policy.approver_role_id)
+    if role_id and user.role_id == role_id:
         return True, ""
     return False, "Your role is not the designated approver for this request."
 
@@ -223,6 +286,19 @@ def _apply_decision(
     request: HttpRequest, approval: ApprovalRequest, *, approve: bool, reason: str
 ) -> ApprovalRequest:
     user: User = request.user
+    if approve:
+        ApprovalVote.objects.create(request=approval, actor=user, reason=reason.strip())
+        if len(eligible_votes(approval)) < approval_quorum(approval):
+            record(
+                "approval.vote_recorded",
+                request=request,
+                target=approval,
+                after={
+                    "votes": len(eligible_votes(approval)),
+                    "required": approval_quorum(approval),
+                },
+            )
+            return approval
     approval.reviewed_by = user
     approval.reviewed_at = timezone.now()
     approval.decision_reason = reason.strip()
@@ -235,6 +311,8 @@ def _apply_decision(
     else:
         approval.status = ApprovalRequest.Status.REJECTED
     approval.save()
+    if not approve and approval.action in _decline_handlers:
+        _decline_handlers[approval.action](request, approval)
     record(
         "approval.approved" if approve else "approval.rejected",
         request=request,
@@ -247,6 +325,10 @@ def _apply_decision(
 
 @transaction.atomic
 def cancel(request: HttpRequest, approval_id: int) -> ApprovalRequest:
+    if ApprovalRequest.objects.filter(pk=approval_id, action__in=_financial_actions).exists():
+        from apps.accounting.services.setup import lock_company
+
+        lock_company()
     approval = ApprovalRequest.objects.select_for_update().filter(pk=approval_id).first()
     if approval is None:
         raise exceptions.NotFound()
@@ -257,5 +339,7 @@ def cancel(request: HttpRequest, approval_id: int) -> ApprovalRequest:
     approval.status = ApprovalRequest.Status.CANCELLED
     approval.reviewed_at = timezone.now()
     approval.save()
+    if approval.action in _decline_handlers:
+        _decline_handlers[approval.action](request, approval)
     record("approval.cancelled", request=request, target=approval)
     return approval

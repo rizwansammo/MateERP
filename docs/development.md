@@ -158,3 +158,29 @@ Run only against this Compose project and review output for failed occurrences. 
 ### Phase 4 checks
 
 Run `powershell -ExecutionPolicy Bypass -File scripts\verify.ps1`, or `scripts\e2e.ps1 -TestFile phase4.spec.ts` for focused isolated browser scenarios. Tests cover exact tax/discounts, historical FX, settlement, verifier segregation, concurrency, period locks, approvals, reconciliation, immutable PDFs and private evidence. See [Phase 4 summary](phase-04-summary.md) for execution results.
+
+## Phase 5: founder finance and ownership
+
+The existing Docker/native Windows arrangement and supported dependencies are retained. Update only this repository and run:
+
+```powershell
+docker compose up -d backend
+docker compose exec backend python manage.py migrate
+# Restart the API after changing installed apps/settings if it is not watching source changes:
+docker compose restart backend
+cd frontend
+npm run dev
+```
+
+1. Review narrow founder, personal-sharing, planning and ownership permissions under Users & Roles. Administrator access includes the new codes; existing non-administrator roles do not silently receive sensitive new grants.
+2. Configure unused, correctly typed Founder payable, Founder loan, Pending founder funding, Other founder equity, Share capital and Share premium controls in Chart of Accounts. Historical balances are never relabelled by migrations. Configure real currencies, FX accounts/rates and accounting periods through existing administration.
+3. Add actual founders/partners from Founder Overview or Ownership → Shareholders. Link an ERP account only when identity administration is authorized. An external participant has no pretend login or automatic consent.
+4. Record company funding, a founder-paid expense or a payment against an existing bill/accrual. Another authorized user reviews its evidence and exact accounting preview. FX differences require explicit confirmation. Sensitive approval policies apply before posting. Reject an incorrect source and record a corrected transaction; do not edit its purchasing expense behind the source.
+5. Create and activate an effective sharing policy. Allocate a posted founder cost or a personal-only shared cost. Record partial personal transfers and obtain both parties' authenticated confirmations, or authorized external attestations with party-specific evidence. A company reimbursement that overlaps personal recovery is blocked. Resolve with an actual confirmed return or independently verified liability reassignment plus an explicitly authorized audited resolution.
+6. Use Expense Sharing tabs for monthly/12-month forecasts, source selection, annual reserves and contribution progress. Saved forecasts are immutable; refreshing/saving creates another revision. Promises create no cash. Designate verified receipts only once; partial company funding requires explicit available company-cash coverage. Consumption links the actual matching posted payment; releasing a funding allocation never reverses the payment itself.
+7. For an unregistered company, record a provisional agreement and effective-dated amendments. For a formal register, configure actual share classes and document the legal/register references. Attach all authorization evidence before collecting consent. The owner/requester cannot give another linked shareholder's consent or approve their own proposal. Independent review and explicit documented confirmation precede register effects. Use the as-of date to inspect historical ownership/capital. A new class or contact alone creates no shares/cash.
+8. Company statements are paginated, date/participant filtered and exportable with report-export permission. Each control/currency retains its own running balance. Personal settlements have separate records; GL control reconciliation is independent of both UI summaries and funding plans. Contribution Progress compares fulfilled costs with their saved forecast estimate, showing the actual historical rate/base total and cost/FX variance without changing either record.
+
+New migrations are additive. They retain existing financial data, backfill original recovery links under the migration's exclusive schema transaction, and enable mandatory ownership governance with an attributed system audit event. They never seed founders, default agreements, loans, shares or cash. Evidence remains in the existing private storage volume; no new infrastructure service or scheduler is introduced.
+
+Full verification remains `powershell -ExecutionPolicy Bypass -File scripts\verify.ps1`. Focused browser acceptance is `powershell -ExecutionPolicy Bypass -File scripts\e2e.ps1 -TestFile phase5.spec.ts`. Each browser run creates and retains its own `mateerp_e2e_<uuid>` database/files on backend 8101. Never aim fixtures at development. After E2E, rebuild the normal frontend with backend URL 8100 before using `npm run start`; a test build intentionally proxies to 8101. Phase 6 requires a separate owner approval.

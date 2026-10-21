@@ -88,6 +88,24 @@ PERMISSIONS: tuple[PermissionDef, ...] = (
     PermissionDef("founder.transactions.manage", "Manage founder transactions", "founder"),
     PermissionDef("founder.settlements.manage", "Manage founder settlements", "founder"),
     PermissionDef("ownership.manage", "Manage ownership records", "founder"),
+    PermissionDef("founder.verify", "Verify founder corporate transactions", "founder"),
+    PermissionDef(
+        "founder.liabilities.manage",
+        "Manage founder liabilities and recovery resolutions",
+        "founder",
+    ),
+    PermissionDef("founder.personal.view", "View personal expense sharing", "founder"),
+    PermissionDef("founder.personal.confirm", "Confirm own personal settlements", "founder"),
+    PermissionDef(
+        "founder.attest", "Record evidence-backed external participant attestations", "founder"
+    ),
+    PermissionDef(
+        "founder.planning.manage", "Manage sharing policies and funding plans", "founder"
+    ),
+    PermissionDef("ownership.view", "View ownership agreements and register", "founder"),
+    PermissionDef("ownership.approve", "Independently approve ownership changes", "founder"),
+    PermissionDef("ownership.consent", "Authorize own ownership changes", "founder"),
+    PermissionDef("ownership.attest", "Record external shareholder authorization", "founder"),
     # Operations
     PermissionDef("procurement.manage", "Manage procurement", "operations"),
     PermissionDef("inventory.manage", "Manage inventory", "operations"),
@@ -109,13 +127,12 @@ class RoleDef:
     is_admin: bool = False
 
 
-_FINANCE_MANAGER = ALL_CODES - {
+_FINANCE_MANAGER = {p.code for p in PERMISSIONS if p.category in {"administration", "finance"}} - {
     "accounting.approve",
     "accounting.periods.manage",
     "users.manage",
     "roles.manage",
     "permissions.manage",
-    "ownership.manage",
 }
 
 DEFAULT_ROLES: tuple[RoleDef, ...] = (

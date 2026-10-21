@@ -88,6 +88,12 @@ def save_account(request, data, pk=None):
         "receivable": "asset",
         "payable": "liability",
         "customer_credit": "liability",
+        "founder_payable": "liability",
+        "founder_loan": "liability",
+        "founder_pending": "liability",
+        "founder_equity": "equity",
+        "share_capital": "equity",
+        "share_premium": "equity",
     }
     if obj.control and (
         obj.control not in control_types or control_types[obj.control] != obj.account_type
@@ -95,9 +101,17 @@ def save_account(request, data, pk=None):
         raise ValidationError(
             {"control": "Choose a control purpose compatible with the account type."}
         )
-    if obj.control in ("receivable", "payable", "customer_credit") and (
-        obj.currency or not obj.is_postable
-    ):
+    if obj.control in (
+        "receivable",
+        "payable",
+        "customer_credit",
+        "founder_payable",
+        "founder_loan",
+        "founder_pending",
+        "founder_equity",
+        "share_capital",
+        "share_premium",
+    ) and (obj.currency or not obj.is_postable):
         raise ValidationError(
             {"control": "Subledger control accounts must be postable and multi-currency."}
         )

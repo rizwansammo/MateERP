@@ -18,6 +18,8 @@ urlpatterns = [
     path("", include("apps.billing.api.urls")),
     path("", include("apps.purchasing.api.urls")),
     path("", include("apps.documents.api.urls")),
+    path("", include("apps.founders.api.urls")),
+    path("", include("apps.ownership.api.urls")),
 ]
 
 if settings.API_DOCS_ENABLED:

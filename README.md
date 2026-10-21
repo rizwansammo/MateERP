@@ -2,7 +2,7 @@
 
 MateERP is NetaMate's enterprise resource planning application. It runs as a single-company installation covering finance, billing, purchasing, accounting, founder finance, operations and documents.
 
-**Status:** Phase 4 implements sales, billing, verified collections, purchasing, expenses, recurrence and private financial documents on the existing accounting engine. See [Phase 4 report](docs/phase-04-summary.md). Founder finance and ownership remain Phase 5; purchase orders and inventory remain Phase 6.
+**Status:** Phase 5 is implemented and verified locally: founder company finance, separate personal sharing/settlements, funding plans/reserves and documented ownership governance extend the existing accounting, billing and document systems. See the [Phase 5 report](docs/phase-05-summary.md). Purchase orders, inventory and other Phase 6 operations remain planned.
 
 | Layer | Technology |
 |---|---|
@@ -46,6 +46,7 @@ Run every check: `powershell -ExecutionPolicy Bypass -File scripts\verify.ps1`
 - [Phase 1 summary](docs/phase-01-summary.md) · [Phase 2 summary](docs/phase-02-summary.md)
 - [Phase 3 summary](docs/phase-03-summary.md) · [Accounting contract](docs/accounting-contract.md)
 - [Phase 4 summary](docs/phase-04-summary.md) · [Resume checkpoints](docs/phase-04-progress.md)
+- [Phase 5 summary](docs/phase-05-summary.md) · [Approved plan](docs/phase-05-plan.md) · [Phase 5 checkpoints](docs/phase-05-progress.md)
 - [CLAUDE.md](CLAUDE.md): project conventions for AI-assisted development
 
 ## Repository layout

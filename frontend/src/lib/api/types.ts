@@ -233,6 +233,8 @@ export interface BrandingDraft {
 }
 
 export interface ApprovalRequest {
+  vote_count?: number;
+  required_approvals?: number;
   id: number;
   category: string;
   action: string;
@@ -274,6 +276,7 @@ export type PublishResult =
   | { status: 'pending_approval'; request: ApprovalRequest };
 
 export interface ApprovalPolicy {
+  required_approvals?: number;
   category: string;
   label: string;
   description: string;

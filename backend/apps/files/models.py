@@ -5,6 +5,9 @@ from django.db import models
 
 
 class FilePurpose(models.TextChoices):
+    FOUNDER_EVIDENCE = "founder_evidence", "Founder corporate evidence"
+    PERSONAL_EVIDENCE = "personal_evidence", "Personal settlement evidence"
+    OWNERSHIP_EVIDENCE = "ownership_evidence", "Ownership authorization evidence"
     COMPANY_LOGO = "company_logo", "Company logo"
     BRANDING_SIGNATURE = "branding_signature", "Authorised signature"
     BRANDING_SEAL = "branding_seal", "Company seal"

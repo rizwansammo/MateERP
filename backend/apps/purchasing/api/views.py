@@ -1,5 +1,5 @@
 from django.db import transaction
-from django.db.models import Sum
+from django.db.models import Q, Sum
 from django.utils import timezone
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema, inline_serializer
@@ -475,6 +475,38 @@ class VendorStatementView(APIView):
                         p.number,
                         ZERO,
                         p.amount,
+                    )
+                )
+        # A founder can settle existing AP without recording another expense.
+        # Show that settlement in the vendor statement as well as in its GL.
+        from apps.founders.models import FounderVendorAllocation
+
+        allocations = FounderVendorAllocation.objects.filter(
+            Q(bill__vendor=vendor) | Q(expense__vendor=vendor),
+            transaction__status__in=["posted", "reversed"],
+        ).select_related("transaction__journal", "transaction__reversal_journal")
+        for allocation in allocations:
+            source = allocation.transaction
+            number = source.journal.number
+            rows.append(
+                (
+                    source.date,
+                    source.currency,
+                    "Third-party settlement",
+                    number,
+                    allocation.amount,
+                    ZERO,
+                )
+            )
+            if source.status == "reversed":
+                rows.append(
+                    (
+                        source.reversal_journal.posting_date,
+                        source.currency,
+                        "Settlement reversed",
+                        number,
+                        ZERO,
+                        allocation.amount,
                     )
                 )
         rows.sort(key=lambda r: (r[0], r[3]))

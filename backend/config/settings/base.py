@@ -18,7 +18,7 @@ _ENV_FILE = BASE_DIR.parent / ".env"
 if _ENV_FILE.is_file():
     environ.Env.read_env(_ENV_FILE)
 
-MATEERP_VERSION = "0.4.0"
+MATEERP_VERSION = "0.5.0"
 MATEERP_ENVIRONMENT = "base"
 
 SECRET_KEY = env("DJANGO_SECRET_KEY", default="")
@@ -46,6 +46,8 @@ INSTALLED_APPS = [
     "apps.billing",
     "apps.purchasing",
     "apps.documents",
+    "apps.founders",
+    "apps.ownership",
 ]
 
 MIDDLEWARE = [
@@ -172,6 +174,22 @@ SPECTACULAR_SETTINGS = {
     "SERVE_INCLUDE_SCHEMA": False,
     "SCHEMA_PATH_PREFIX": r"/api/v[0-9]+",
     "ENUM_NAME_OVERRIDES": {
+        "FinancialPartyKindEnum": [("individual", "Individual"), ("organization", "Organization")],
+        "FounderTransactionKindEnum": [
+            (x, x.replace("_", " ").title())
+            for x in (
+                "receipt",
+                "expense",
+                "vendor_payment",
+                "reimbursement",
+                "loan_repayment",
+                "reclassify",
+                "reassign",
+            )
+        ],
+        "OwnershipEventKindEnum": [
+            (x, x.title()) for x in ("provisional", "transfer", "issuance", "opening")
+        ],
         "HealthStatusEnum": ["ok", "unavailable"],
         "ApprovalStatusEnum": "apps.approvals.models.ApprovalRequest.Status",
         "AuditOutcomeEnum": "apps.audit.models.AuditEvent.Outcome",

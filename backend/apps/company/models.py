@@ -7,6 +7,46 @@ from django.db.models import Q
 SINGLETON_ID = 1
 
 
+class FinancialParty(models.Model):
+    """A person or organization participating in finance; never another tenant."""
+
+    name = models.CharField(max_length=200)
+    display_name = models.CharField(max_length=120, blank=True)
+    kind = models.CharField(
+        max_length=16, choices=[("individual", "Individual"), ("organization", "Organization")]
+    )
+    email = models.EmailField(blank=True)
+    phone = models.CharField(max_length=40, blank=True)
+    country = models.CharField(max_length=80, blank=True)
+    notes = models.CharField(max_length=2000, blank=True)
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="financial_party",
+    )
+    is_founder = models.BooleanField(default=False)
+    is_shareholder = models.BooleanField(default=False)
+    is_partner = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+    joined = models.DateField()
+    left = models.DateField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["name", "pk"]
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(left__isnull=True) | Q(left__gte=models.F("joined")),
+                name="party_participation_dates",
+            )
+        ]
+
+    def __str__(self):
+        return self.display_name or self.name
+
+
 class CompanyProfile(models.Model):
     """The one company this installation belongs to.
 

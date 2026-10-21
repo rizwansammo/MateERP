@@ -18,7 +18,7 @@ import { Breadcrumbs } from './Breadcrumbs';
  * (with the delivering phase named) until those modules exist.
  */
 const PLANNED = {
-  search: 'Global search becomes available as business modules are delivered (Phase 4).',
+  search: 'Global cross-module search is planned. Use the search in each directory.',
   create: 'Quick-create actions arrive with the business modules (Phases 3–4).',
 };
 

@@ -18,7 +18,19 @@ RESERVED_SOURCES = frozenset(
     {"manual", "opening", "adjustment", "reversal", "transfer", "bank_adjustment"}
 )
 # Accounts that only domain adapters may post to, so subledgers reconcile exactly.
-SUBLEDGER_CONTROLS = frozenset({"receivable", "payable", "customer_credit"})
+SUBLEDGER_CONTROLS = frozenset(
+    {
+        "receivable",
+        "payable",
+        "customer_credit",
+        "founder_payable",
+        "founder_loan",
+        "founder_pending",
+        "founder_equity",
+        "share_capital",
+        "share_premium",
+    }
+)
 
 _registry: dict[str, dict[str, tuple[str, ...]]] = {}
 _TOKEN = object()

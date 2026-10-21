@@ -186,6 +186,7 @@ class VendorBillLine(models.Model):
 
 class Expense(models.Model):
     class Mode(models.TextChoices):
+        FOUNDER = "founder", "Paid personally by a founder"
         PAID = "paid", "Paid now from a bank or cash account"
         ACCRUED = "accrued", "Accrued — payable to the vendor"
 
@@ -267,7 +268,8 @@ class Expense(models.Model):
         constraints = [
             models.CheckConstraint(
                 condition=(Q(payment_mode="paid", bank_account__isnull=False))
-                | Q(payment_mode="accrued", vendor__isnull=False, due_date__isnull=False),
+                | Q(payment_mode="accrued", vendor__isnull=False, due_date__isnull=False)
+                | Q(payment_mode="founder", bank_account__isnull=True),
                 name="expense_mode_consistent",
             ),
             models.CheckConstraint(

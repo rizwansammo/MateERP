@@ -36,6 +36,8 @@ Browser ──> Next.js (frontend, :3100) ──/api/*──> Django + DRF (back
 | `apps/billing` | Invoices, segregated payment verification, receipts, credit notes, refunds, customer credit, recurring billing and independent AR/credit reconciliation |
 | `apps/purchasing` | Vendors, bills, paid/accrued expenses, reviewed vendor payments, recurring expenses and independent AP reconciliation |
 | `apps/documents` | Frozen official PDFs, resumable rendering, validated financial uploads, private filing and client/vendor virtual folder queries |
+| `apps/founders` | Verified corporate funding/obligations, source-rooted recovery safeguards, separate personal sharing/confirmations, immutable funding forecasts and actual funding/reserve links |
+| `apps/ownership` | Effective provisional amendments, formal share classes/register events, immutable evidence/consents, distinct governance quorum and historical capital views |
 
 **Conventions for domain apps**
 - Shape: `models.py`, `services/` (business rules and transactions), `api/` (thin views and serializers), `tests/`.
@@ -197,6 +199,18 @@ Recurrence uses unique schedule/date runs and explicit owner/runner permission c
 2. **Authentication and administration:** complete
 3. **Core accounting engine:** implemented; see Phase 3 acceptance report
 4. **Billing, expenses and documents:** implemented; see Phase 4 acceptance report
-5. Founder finance and ownership
+5. **Founder finance and ownership:** implemented and verified; see Phase 5 acceptance report
 6. Business operations and reporting
 7. Security, final testing and release
+
+## Founder finance and ownership boundaries
+
+`company.FinancialParty` is a company financial participant, never an employee/HR record or another tenant. It can represent an individual or organization and optionally link an ERP account. `founders` owns independently verified company receipts, principal loans, founder-funded purchasing costs/AP settlements, exact corporate obligations and their allocations. Every company journal is posted through the existing accounting adapter. Vendor statements and AP reconciliation include third-party settlements without repeating expense.
+
+Personal cost-sharing obligations and two-party confirmations are separate non-GL records. Equal/custom policies and explicit provisional/formal ownership bases are effective-dated; every approved allocation freezes its basis. A corporate obligation retains its original recovery source through partial reclassification and reassignment. Reimbursement checks all related company recoveries and confirmed personal recoveries, including returns and audited resolutions. No personal action automatically adjusts company accounting.
+
+The planner reads existing recurring-expense identities, actual drafts/payments and explicitly selected one-off obligations. Saved forecasts are immutable revisions. Requested/promised funding is disclosed separately from verified receipts. Partial company-cash coverage uses actual ledger availability. Annual reserves retain verified receipt designations, partial consumption, releases and audited rollover; these are funding plans, never a bank-balance cache or a second recurrence engine.
+
+`ownership` separates provisional percentage agreements from formal share classes and effective-dated register events. A proposal freezes its before/after register and affected-party requirements. Evidence and authenticated consent/authorized external attestation precede independent governance review. Approval records immutable distinct actor votes and frozen quorum; confirmation rechecks current eligibility, evidence, source identity and the effective-date sequence. Formal units, nominal capital, paid-in funding and unpaid subscriptions remain distinct.
+
+Private evidence uses the established validated storage and access-policy registry. PostgreSQL independently guards posted sources, allocations, confirmations, frozen ownership/approval identities, voting/consent history, reserve/funding changes and confirmed share balances. The existing company financial mutex serializes financial writes; no new infrastructure services were added.

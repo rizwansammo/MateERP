@@ -1,6 +1,6 @@
 # Accounting posting contract and invariants
 
-Phase 3. One company per installation. Accounting owns the only authoritative ledger; banking owns metadata and reconciliation, never balances.
+Phases 3–5. One company per installation. Accounting owns the only authoritative ledger; banking owns metadata and reconciliation, never balances.
 
 ## Adapter contract for Phase 4 and later
 
@@ -9,6 +9,7 @@ Call `apps.accounting.services.posting.post_journal` inside the owning domain wo
 ```python
 journal = post_journal(
     actor=user,
+    authority=authority,  # scoped by the registered source adapter, never supplied by a client
     posting_key=operation_key,
     source_type="owning_domain",
     source_id=str(source.pk),
@@ -23,10 +24,10 @@ journal = post_journal(
 )
 ```
 
-Optional inputs: `journal_date`, `draft_id`, `reversal_of`, `adjustment_of`, `reason`. Future adapters validate source ownership, module/operation permission, amount and lifecycle before calling; do not let public clients choose trusted identities. The current generic service additionally requires `accounting.manage`; Phase 4 adapters must deliberately design source-specific permissions rather than exposing a public bypass or automatically granting accounting access to billing roles.
+Optional inputs: `journal_date`, `draft_id`, `reversal_of`, `adjustment_of`, `reason`. Registered domain adapters validate source ownership, current module/operation permissions, amount and lifecycle before obtaining their actor/source/action-scoped authority. Never expose authority through APIs. Public manual posting requires `accounting.manage`; billing, purchasing and founder adapters enforce their own registered permissions without granting general accounting access.
 
 - A source action has one stable `(source_type, source_id, source_action)` identity even across different client keys. Retry identical input to receive the same journal. Reuse with different content is a 409 conflict. Keys are 8–160 characters.
-- Check `journal.status`: `pending` is an approval request, **not** a posted financial result. Pending/draft entries do not affect balances. Owning records must distinguish those states and commit their links atomically with journal creation. No Phase 4 owning records exist yet.
+- Check `journal.status`: `pending` is an approval request, **not** a posted financial result. Pending/draft entries do not affect balances. Owning billing, purchasing and founder records distinguish these states and commit source links atomically with journal creation.
 - For public drafts use `/api/v1/accounting/journals/` and its `validate`, `post`, `reverse`, `history` actions. Posting returns `{status: posted|pending_approval, journal, replayed}`. A draft update sends its current `revision`; stale edits conflict.
 - Public manual sources are manual/opening/adjustment only. One initial opening source is allowed. Adjustment links reference posted entries. Corrections never edit posted content.
 - Reject/cancel before editing frozen manual approval drafts. Revalidation saves a new revision and resubmission uses a fresh key. Rejected treasury requests have no ledger effect; record a fresh reviewed transaction. A rejected reversal can be requested again from its original entry.
@@ -90,4 +91,16 @@ Issued invoices/credit notes/receipts retain immutable snapshots and a published
 
 Client filing follows invoice issue year even for later collections. Multi-invoice receipts reference the same stored PDF from each invoice bundle. Vendor filing follows document year/month/vendor/type. Generated PDFs cannot be refiled or archived; uploaded evidence can be archived with a reason while its private file and audit history remain. Metadata and download access both enforce reference/purpose permissions, including the separate bank-evidence permission.
 
-Recurring invoices default to drafts; auto-issue requires explicit authorization that is rechecked on every run. Recurring expenses generate drafts for review. Schedule/date uniqueness and row locks prevent duplicate occurrences. Failed runs can be retried, and owner permission revocation prevents unauthorized unattended processing. Phase 5 founder settlements and Phase 6 purchase orders remain outside this implementation.
+Recurring invoices default to drafts; auto-issue requires explicit authorization that is rechecked on every run. Recurring expenses generate drafts for review. Schedule/date uniqueness and row locks prevent duplicate occurrences. Failed runs can be retried, and owner permission revocation prevents unauthorized unattended processing. Phase 6 purchase orders remain outside this implementation.
+
+## Phase 5 source and recovery contract
+
+The registered `founder_transaction` adapter requires current founder verification authority; reversals also require liability-management authority. The maker and verifier differ. Recorded and awaiting-approval sources never affect balances. Company receipts choose one classification: pending funding liability, principal loan, explicitly mapped other equity or qualified share capital/premium. A confirmed documented issuance and remaining subscription capacity are required for share-capital treatment; an unpaid commitment creates no cash or automatic subscription receivable.
+
+Founder-funded expenses reuse purchasing's exact tax/debit calculation and its single expense record. Personally settling a posted vendor bill/accrual debits its historical AP carrying value and creates the documented founder obligation/equity; it never repeats the original cost. Reimbursements and principal repayments debit exact historical founder obligations and credit actual company cash at the central treasury's carrying value, with explicitly reviewed FX differences. The final partial settlement clears the exact original base remainder. Source-owned reversals retain downstream restrictions and reopen AP consistently.
+
+`FounderObligation.recovery_origin` preserves the original corporate cost/funding identity through partial reclassification/reassignment. Such sources retain one original obligation each; payouts may allocate multiple obligations, grouped by their recovery origins when checking limits. Confirmed personal recovery plus corporate reimbursement cannot exceed that original cost for the recipient. Block overlap before posting. A confirmed personal return or an explicit independently verified liability reassignment and audited resolution can resolve the conflict; no personal settlement edits the GL.
+
+Founder payables, principal loans and pending funding reconcile independently from immutable source obligations/settlements to their protected GL controls. Recognized other equity and share capital/premium reconcile from frozen source valuations. Corporate statements read actual protected journal movements, including reversals, with separate running balances per party/control/currency. Personal statements and funding forecasts never contribute to these totals.
+
+Planning references actual recurrence/date identities and actual payment records. Pledges, expected costs, reserve targets and funding designations are not accounting entries. Check real ledger cash coverage before designation, allocate each verified receipt once, and link consumption to the actual matching payment. Preserve source/forecast/reserve revisions and all releases/rollovers. No manual posting API can write founder control balances.

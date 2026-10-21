@@ -11,10 +11,15 @@ import { useDialogBehaviour } from '@/components/ui/Overlay';
 import { ViewerToolbar, ZoomControl } from '@/features/documents/DocumentStage';
 
 import { KIND_LABEL } from './shared';
-import type { FiledDocument } from './types';
+import type { DocumentKind } from './types';
+
+export interface PrivateDocumentView {
+  title: string; content_type: string; url: string; download_url: string; document_date: string;
+  kind?: DocumentKind; label?: string; generated?: boolean; restricted?: boolean; customer_name?: string | null; vendor_name?: string | null;
+}
 
 /** Dark document viewer (prototype DocViewer chrome) for stored PDFs and images. */
-export function FileViewer({ doc, onClose }: { doc: FiledDocument; onClose: () => void }) {
+export function FileViewer({ doc, onClose }: { doc: PrivateDocumentView; onClose: () => void }) {
   const [zoom, setZoom] = useState(1);
   const panel = useDialogBehaviour(true, onClose);
   const pdf = doc.content_type === 'application/pdf';
@@ -24,7 +29,7 @@ export function FileViewer({ doc, onClose }: { doc: FiledDocument; onClose: () =
       <ViewerToolbar
         icon={pdf ? 'picture_as_pdf' : 'image'}
         title={doc.title}
-        subtitle={`${KIND_LABEL[doc.kind]} · ${party} · ${formatDate(doc.document_date)}${doc.generated ? ' · system-generated, immutable' : ''}${doc.restricted ? ' · restricted banking evidence' : ''}`}
+        subtitle={`${doc.label ?? (doc.kind ? KIND_LABEL[doc.kind] : 'Private evidence')} · ${party} · ${formatDate(doc.document_date)}${doc.generated ? ' · system-generated, immutable' : ''}${doc.restricted ? ' · restricted banking evidence' : ''}`}
         onClose={onClose}
       >
         <ZoomControl zoom={zoom} onZoom={setZoom} />

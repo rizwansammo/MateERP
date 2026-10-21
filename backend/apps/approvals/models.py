@@ -14,6 +14,7 @@ class ApprovalPolicy(models.Model):
     )
     amount_threshold = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
     allow_self_approval = models.BooleanField(default=False)
+    required_approvals = models.PositiveSmallIntegerField(default=1)
     notes = models.CharField(max_length=500, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
     updated_by = models.ForeignKey(
@@ -23,6 +24,10 @@ class ApprovalPolicy(models.Model):
     class Meta:
         verbose_name_plural = "approval policies"
         constraints = [
+            models.CheckConstraint(
+                condition=Q(required_approvals__gte=1, required_approvals__lte=20),
+                name="approval_count_range",
+            ),
             models.CheckConstraint(
                 condition=Q(amount_threshold__isnull=True) | Q(amount_threshold__gte=0),
                 name="approval_threshold_non_negative",
@@ -56,6 +61,7 @@ class ApprovalRequest(models.Model):
     title = models.CharField(max_length=200)
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.PENDING)
     payload = models.JSONField(default=dict)
+    policy_snapshot = models.JSONField(default=dict)
     requested_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="approval_requests"
     )
@@ -93,3 +99,18 @@ class ApprovalRequest(models.Model):
 
     def __str__(self) -> str:
         return self.title
+
+
+class ApprovalVote(models.Model):
+    request = models.ForeignKey(ApprovalRequest, on_delete=models.PROTECT, related_name="votes")
+    actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    reason = models.CharField(max_length=500, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["request", "actor"], name="distinct_approval_vote")
+        ]
+
+    def __str__(self):
+        return f"Approval #{self.request_id} · user #{self.actor_id}"

@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Choice';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Field } from '@/components/ui/Field';
-import { AmountInput, Select, Textarea } from '@/components/ui/Input';
+import { AmountInput, Input, Select, Textarea } from '@/components/ui/Input';
 import { Cell, DialogActions, DialogFooter, Drawer, FormGrid } from '@/components/ui/Overlay';
 import { PageContainer, PageHeader } from '@/components/ui/PageHeader';
 import { Panel } from '@/components/ui/Panel';
@@ -54,7 +54,7 @@ function RequestsTable() {
     invalidate('/branding/');
     invalidate('/accounting/');
     invalidate('/banking/');
-      for (const prefix of ['/sales/', '/billing/', '/purchasing/', '/documents/']) invalidate(prefix);
+      for (const prefix of ['/sales/', '/billing/', '/purchasing/', '/documents/', '/founders/', '/ownership/']) invalidate(prefix);
     toast(message);
   };
 
@@ -91,7 +91,7 @@ function RequestsTable() {
                   <div>{r.requested_by.display_name}</div>
                   <div className="text-[11.5px] text-tx3">{formatDateTime(r.requested_at)}</div>
                 </TD>
-                <TD><Badge tone={STATUS_TONE[r.status]}>{r.status === 'cancelled' ? 'Withdrawn' : r.status}</Badge></TD>
+                <TD><Badge tone={STATUS_TONE[r.status]}>{r.status === 'cancelled' ? 'Withdrawn' : r.status}</Badge>{r.category==='ownership_changes' && <div className="mt-1 text-[11px] text-tx3">{r.vote_count ?? 0}/{r.required_approvals ?? 1} independent approvals · separate shareholder consent required</div>}</TD>
                 <TD className="text-tx2">
                   {r.reviewed_by ? (
                     <>
@@ -129,8 +129,8 @@ function RequestsTable() {
         onCancel={() => setDecision(null)}
         onConfirm={async (reason) => {
           if (!decision) return;
-          await api.post(`/approvals/requests/${decision.request.id}/${decision.approve ? 'approve' : 'reject'}/`, { reason });
-          after(decision.approve ? 'Approved — the change has been applied' : 'Request rejected');
+          const result = await api.post<ApprovalRequest>(`/approvals/requests/${decision.request.id}/${decision.approve ? 'approve' : 'reject'}/`, { reason });
+          after(decision.approve ? result.status==='pending' ? 'Vote recorded — further independent approvals required' : result.category==='ownership_changes' ? 'Proposal approved — documented register confirmation is still required' : 'Approved — the change has been applied' : 'Request rejected');
           setDecision(null);
         }}
       >
@@ -210,6 +210,7 @@ function RulesTable() {
 }
 
 interface PolicyForm extends Record<string, unknown> {
+  required_approvals: string;
   is_required: boolean;
   is_active: boolean;
   approver_role: string;
@@ -220,6 +221,7 @@ interface PolicyForm extends Record<string, unknown> {
 
 function PolicyDrawer({ policy, roles, onClose, onSaved }: { policy: ApprovalPolicy; roles: Role[]; onClose: () => void; onSaved: () => void }) {
   const form = useFormState<PolicyForm>({
+    required_approvals: String(policy.required_approvals ?? 1),
     is_required: policy.is_required,
     is_active: policy.is_active,
     approver_role: policy.approver_role ? String(policy.approver_role.id) : '',
@@ -240,6 +242,7 @@ function PolicyDrawer({ policy, roles, onClose, onSaved }: { policy: ApprovalPol
     setError(null);
     try {
       await api.patch(`/approvals/policies/${policy.category}/`, {
+        ...(policy.category==='ownership_changes' ? {required_approvals:Number(values.required_approvals)} : {}),
         is_required: values.is_required,
         is_active: values.is_active,
         approver_role: values.approver_role ? Number(values.approver_role) : null,
@@ -268,8 +271,9 @@ function PolicyDrawer({ policy, roles, onClose, onSaved }: { policy: ApprovalPol
         </DialogFooter>
       }>
       <FormGrid>
-        <Cell><Checkbox checked={values.is_required} onChange={(v) => set('is_required', v)} label="Approval required" hint="Actions in this category wait for an approver before taking effect." /></Cell>
-        <Cell><Checkbox checked={values.is_active} onChange={(v) => set('is_active', v)} label="Rule active" /></Cell>
+        {policy.category==='ownership_changes' && <Cell><Field htmlFor="ownership-quorum" label="Required distinct independent approvals" hint="Shareholder consent is separate. A later policy edit cannot reduce requirements on an existing proposal."><Input id="ownership-quorum" type="number" min="1" max="20" value={values.required_approvals} onChange={e=>set('required_approvals',e.target.value)}/></Field></Cell>}
+        <Cell><Checkbox disabled={policy.category==='ownership_changes'} checked={values.is_required} onChange={(v) => set('is_required', v)} label="Approval required" hint={policy.category==='ownership_changes' ? 'Ownership always requires affected-party authorization and independent review.' : 'Actions in this category wait for an approver before taking effect.'} /></Cell>
+        <Cell><Checkbox disabled={policy.category==='ownership_changes'} checked={values.is_active} onChange={(v) => set('is_active', v)} label="Rule active" /></Cell>
         <Cell>
           <Field label="Designated approver role" htmlFor="p-role" error={errors.approver_role} hint="Members of this role (and Administrators) can decide requests.">
             <Select id="p-role" value={values.approver_role} onChange={(e) => set('approver_role', e.target.value)}>
@@ -285,7 +289,7 @@ function PolicyDrawer({ policy, roles, onClose, onSaved }: { policy: ApprovalPol
             </Field>
           </Cell>
         )}
-        <Cell><Checkbox checked={values.allow_self_approval} onChange={(v) => set('allow_self_approval', v)} label="Allow requesters to approve their own requests" hint="Off by default — a second person should review." /></Cell>
+        <Cell><Checkbox disabled={policy.category==='ownership_changes'} checked={values.allow_self_approval} onChange={(v) => set('allow_self_approval', v)} label="Allow requesters to approve their own requests" hint="Off by default — a second person should review." /></Cell>
         <Cell>
           <Field label="Notes" htmlFor="p-notes" error={errors.notes}>
             <Textarea id="p-notes" rows={3} maxLength={500} value={values.notes} onChange={(e) => set('notes', e.target.value)} />

@@ -60,6 +60,7 @@ describe('LoginForm', () => {
     await userEvent.type(screen.getByLabelText('Password', { selector: 'input' }), 'secret-passphrase');
     await userEvent.click(screen.getByRole('button', { name: 'Sign in' }));
     await waitFor(() => expect(nav.replace).toHaveBeenCalledWith('/settings/users'));
+    expect(nav.refresh).not.toHaveBeenCalled();
     const login = calls.find((c) => c.path === '/auth/login/')!;
     expect(login.headers['X-CSRFToken']).toBe('test-token');
     expect(login.body).toEqual({ identifier: 'admin', password: 'secret-passphrase', remember: false });

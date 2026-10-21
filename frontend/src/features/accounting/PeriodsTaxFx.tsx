@@ -443,7 +443,7 @@ export function TaxPage() {
   return (
     <Screen
       title="Tax codes & tax position"
-      description="Tax categories and mapped ledger accounts for manual tax journals. Billing calculations arrive in Phase 4; filing is not provided."
+      description="Tax categories and mapped ledger accounts for manual journals and billing. Tax filing is not provided."
       actions={
         can("accounting.manage") && (
           <Button variant="primary" icon="add" onClick={() => setEdit("new")}>

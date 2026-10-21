@@ -1,0 +1,7 @@
+import type { StoredEvidence } from '@/features/founders/types';
+export interface ShareClass { id:number; name:string; currency:string; par_value:string|null; rights:string; is_active:boolean }
+export interface Holding { units: Record<string,string>; total:string; percentages: Record<string,string> }
+export interface OwnershipSnapshot { required_parties: number[]; before: Record<string,Holding> | {proposal_id:number|null; weights:Record<string,string>; effective_date:string|null}; after: Record<string,Holding> | {weights:Record<string,string>} }
+export interface Proposal {id:number; kind:string; title:string; effective_date:string; share_class:number|null; status:string; rationale:string; legal_reference:string; weights:Record<string,string>; snapshot:OwnershipSnapshot; approval:number|null; approval_status:string|null; created_by:number; confirmed_at:string|null; consents:{party_id:number;actor_id:number;mode:string;reference:string}[]; evidence:StoredEvidence[]; lines:{id:number; transferor:number|null; recipient:number; units:string; price:string}[] }
+export interface Register {date:string; formal:Record<string,Holding>; provisional:{proposal_id:number|null;weights:Record<string,string>;effective_date:string|null} }
+export interface Capital {classes:{id:number;name:string;currency:string;par_value:string|null;rights:string;register:Holding;subscribed:string;paid_in:string;unpaid_commitments:string;nominal:string|null}[]; provisional:Register['provisional']; note:string }

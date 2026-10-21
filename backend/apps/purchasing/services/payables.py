@@ -432,6 +432,11 @@ def save_expense(request, data, pk=None, *, schedule=None):
     if pk:
         if expense is None:
             raise NotFound()
+        if hasattr(expense, "founder_funding"):
+            raise BusinessRuleViolation(
+                "This expense is owned by Founder Finance. Reject and record a corrected "
+                "founder transaction instead of changing its source."
+            )
         _sync(expense)
         if expense.status != Expense.Status.DRAFT:
             raise BusinessRuleViolation("Only draft expenses can be edited.")
@@ -441,9 +446,7 @@ def save_expense(request, data, pk=None, *, schedule=None):
             )
         expense.revision += 1
     if data.get("paid_by", "company") != "company":
-        raise ValidationError(
-            {"paid_by": "Founder-paid expenses arrive with Founder Finance in Phase 5."}
-        )
+        raise ValidationError({"paid_by": "Record founder funding through Founder Finance."})
     for field in EXPENSE_FIELDS:
         if field in data:
             setattr(expense, field, data[field])
@@ -476,6 +479,10 @@ def save_expense(request, data, pk=None, *, schedule=None):
         expense.due_date = expense.due_date or expense.expense_date + timedelta(
             days=expense.vendor.payment_terms_days
         )
+    elif expense.payment_mode == Expense.Mode.FOUNDER:
+        require(request.user, "founder.transactions.manage")
+        expense.bank_account = None
+        expense.due_date = None
     else:
         raise ValidationError({"payment_mode": "Choose paid now or accrued."})
     enabled_currency(expense.currency)
@@ -567,6 +574,8 @@ def execute_expense(request, approval, approver):
 
 
 def _post_expense(request, expense, actor):
+    if expense.payment_mode == Expense.Mode.FOUNDER:
+        raise BusinessRuleViolation("Verify and post this expense through Founder Finance.")
     authority = authorize(actor, "expense", "post")
     company = lock_company()
     base = company.base_currency
@@ -648,6 +657,19 @@ def void_expense(request, pk, reason, on=None):
         raise ValidationError({"reason": "Explain why the expense is voided."})
     if expense.status == Expense.Status.VOID:
         return expense
+    if expense.payment_mode == Expense.Mode.FOUNDER:
+        raise BusinessRuleViolation(
+            "Reverse the owning founder transaction through Founder Finance."
+        )
+    from apps.founders.services.planning import active_consumptions
+
+    if (
+        active_consumptions().filter(expense=expense).exists()
+        or expense.company_funding_coverage.filter(status="consumed").exists()
+    ):
+        raise BusinessRuleViolation(
+            "Release the retained funding allocations with a reason before voiding this expense."
+        )
     if not expense.number or expense.amount_paid:
         raise BusinessRuleViolation("Only posted expenses without vendor payments can be voided.")
     expense.void_journal = posting.reverse(
@@ -671,6 +693,10 @@ def cancel_expense(request, pk):
     expense = Expense.objects.select_for_update().filter(pk=pk).first()
     if expense is None:
         raise NotFound()
+    if hasattr(expense, "founder_funding") and expense.founder_funding.status != "rejected":
+        raise BusinessRuleViolation(
+            "Reject the owning founder transaction before cancelling its draft."
+        )
     _sync(expense)
     if expense.status != Expense.Status.DRAFT:
         raise BusinessRuleViolation("Only draft expenses can be cancelled.")

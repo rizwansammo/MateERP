@@ -165,3 +165,11 @@ Reference inspected read-only from the existing prototype build at port 3200. No
 - Product wordmark, sidebar 264/64px, header 56px, colors, theme tokens and shell spacing are unchanged. Unimplemented founder finance and operations remain planned. No demo financial records or simulated actions were introduced.
 
 Side-by-side review covers Sales/Purchases overview, invoices, expenses and both explorers. Pixel identity is not asserted: real permissions, empty states, reconciliation evidence and production validation change content and necessary controls. Browser tests cover desktop/light/dark/mobile and compact navigation; PDF raster review covers all official layouts and multi-page continuation.
+
+## Phase 5 founder / ownership extension
+
+Read-only reference: `components/erp/Founder.tsx`, `Ownership.tsx` and their page/form definitions. Production reuses the established shell, `Screen`/`PageHeader`, KPI strip, 18px chart/panel grid, financial tables, sharp drawers and validated evidence viewer. Page padding stays 24px 28px 56px with a 1640px maximum width; the sidebar/header/typography/tokens are unchanged.
+
+Founder has the prototype's eight sections; policy/planning/reserve/contribution/allocation sections share its compact tab convention. Ownership has six sections, dense cap tables and class-specific ownership bars. Real production evidence, quorum, participant consent, provisional-versus-formal identity, historical dates and blocked-recovery feedback extend those patterns without inventing operational data or legal registration.
+
+Phase 5 browser review covers all routes, light/dark, 264/64px sidebar, 56px header and a 390px mobile viewport. Captures wait for actual data before review. Source/value comparison and visual inspection preserve the approved visual identity; no universal pixel-diff certification is claimed. Prototype application source was not copied or modified.

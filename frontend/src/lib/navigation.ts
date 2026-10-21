@@ -4,7 +4,7 @@
  * modules above CURRENT_PHASE are shown as planned, never as working features.
  */
 
-export const CURRENT_PHASE = 4;
+export const CURRENT_PHASE = 5;
 
 export const PHASES: Record<number, string> = {
   1: 'Project Foundation',
@@ -127,7 +127,7 @@ export const NAVIGATION: NavGroup[] = [
       },
       {
         id: 'founder',
-        permissions: ['founder.view'],
+        permissions: ['founder.view', 'founder.personal.view'],
         module: 'founder',
         label: 'Founder Finance',
         icon: 'handshake',
@@ -147,7 +147,7 @@ export const NAVIGATION: NavGroup[] = [
       },
       {
         id: 'ownership',
-        permissions: ['founder.view', 'ownership.manage'],
+        permissions: ['ownership.view', 'ownership.manage', 'ownership.approve', 'ownership.consent'],
         module: 'ownership',
         label: 'Ownership & Capital',
         icon: 'donut_large',

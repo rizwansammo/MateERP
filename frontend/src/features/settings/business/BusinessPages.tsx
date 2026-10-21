@@ -312,7 +312,7 @@ function TaxForm({ settings, taxId, editable, onSaved }: { settings: BusinessSet
   return (
     <PageContainer>
       <PageHeader eyebrow="Settings" title="Tax settings" description="Tax identification and defaults that future invoices and bills will use." />
-      <Banner tone="info">Document tax defaults. Ledger tax mappings and manual adjustments are available in Banking & Accounting → Tax Management. Billing calculations arrive in Phase 4; tax filing is not provided.</Banner>
+      <Banner tone="info">Document tax defaults. Ledger tax mappings and manual adjustments are available in Banking & Accounting → Tax Management. Billing uses these mappings; tax filing is not provided.</Banner>
       {error && <Banner tone="err">{error}</Banner>}
       <InfoPanels>
         <InfoPanel title="Identification" rows={[
