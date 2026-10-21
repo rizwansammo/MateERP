@@ -1,4 +1,5 @@
 import { type Page, expect, test } from '@playwright/test';
+import { savedPreference } from './support';
 
 const sidebarWidth = (page: Page) =>
   page.getByTestId('sidebar').evaluate((el) => el.getBoundingClientRect().width);
@@ -26,25 +27,29 @@ test.describe('application shell', () => {
 
   test('sidebar collapses to 64px, persists, and expands to 264px', async ({ page }) => {
     await page.goto('/dashboard');
-    await page.getByRole('button', { name: 'Collapse sidebar' }).click();
+    const compact = await savedPreference(page, () => page.getByRole('button', { name: 'Collapse sidebar' }).click());
+    expect(compact.preferences.sidebar).toBe('compact');
     await expect.poll(() => sidebarWidth(page)).toBe(64);
 
     await page.reload();
     await expect.poll(() => sidebarWidth(page)).toBe(64);
 
-    await page.getByRole('button', { name: 'Expand sidebar' }).click();
+    const full = await savedPreference(page, () => page.getByRole('button', { name: 'Expand sidebar' }).click());
+    expect(full.preferences.sidebar).toBe('full');
     await expect.poll(() => sidebarWidth(page)).toBe(264);
   });
 
   test('theme switches to dark and persists across reloads', async ({ page }) => {
     await page.goto('/dashboard');
-    await page.getByRole('button', { name: 'Switch to dark mode' }).click();
+    const dark = await savedPreference(page, () => page.getByRole('button', { name: 'Switch to dark mode' }).click());
+    expect(dark.preferences.theme).toBe('dark');
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
     await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(6, 9, 13)');
 
     await page.reload();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-    await page.getByRole('button', { name: 'Switch to light mode' }).click();
+    const light = await savedPreference(page, () => page.getByRole('button', { name: 'Switch to light mode' }).click());
+    expect(light.preferences.theme).toBe('light');
     await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(237, 240, 244)');
   });
 
@@ -99,6 +104,6 @@ test.describe('backend integration', () => {
     const stats = page.getByTestId('health-stats');
     await expect(stats).toContainText('Operational');
     await expect(stats).toContainText('Connected');
-    await expect(stats).toContainText('0.5.0');
+    await expect(stats).toContainText('0.6.0');
   });
 });

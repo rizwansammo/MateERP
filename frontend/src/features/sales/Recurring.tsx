@@ -38,7 +38,7 @@ function ScheduleDrawer({ schedule, onClose }: { schedule?: Schedule; onClose: (
       const data = { ...body(v, ['interval', 'due_days']), end_date: v.end_date || null, lines: toPayload(lines, 'revenue_account_id'), ...(schedule ? { revision: schedule.revision } : {}) };
       return schedule ? api.patch(`/billing/recurring/${schedule.id}/`, data) : api.post('/billing/recurring/', data);
     }}>
-    <div className="mt-4 border border-bd"><LinesEditor lines={lines} onChange={setLines} currency={currency} calc={calc.result} accountKind="revenue" /><div className="flex flex-wrap justify-between gap-3 p-3"><Button size="sm" onClick={() => setLines(v => [...v, blankLine()])}>Add line</Button><Totals calc={calc.result} currency={currency} error={calc.error} /></div></div>
+    <div className="mt-4 border border-bd"><LinesEditor lines={lines} onChange={setLines} currency={currency} date={start} pricesIncludeTax={schedule?.template.prices_include_tax ?? false} calc={calc.result} accountKind="revenue" /><div className="flex flex-wrap justify-between gap-3 p-3"><Button size="sm" onClick={() => setLines(v => [...v, blankLine()])}>Add line</Button><Totals calc={calc.result} currency={currency} error={calc.error} /></div></div>
     {schedule && <div className="mt-4"><RunHistory runs={detail.data?.runs} /></div>}
   </FormDrawer>;
 }

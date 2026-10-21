@@ -130,7 +130,7 @@ function OrderDrawer({ order, onClose }: { order?: SalesOrder; onClose: () => vo
         </Cell>
         <Cell w="full">
           <div className="border border-bd">
-            <LinesEditor lines={lines} onChange={setLines} currency={currency} calc={calc.result} accountKind="revenue" />
+            <LinesEditor lines={lines} onChange={setLines} currency={currency} date={date} pricesIncludeTax={inclusive} calc={calc.result} accountKind="revenue" />
             <div className="flex flex-wrap items-start justify-between gap-3 px-3 py-3">
               <div className="flex flex-col gap-3">
                 <Button size="sm" icon="add" onClick={() => setLines([...lines, blankLine()])}>
@@ -190,7 +190,7 @@ export function OrdersPage() {
         ]}
         empty="No sales orders."
         columns={[
-          { key: 'no', label: 'Order', render: (o) => <Primary mono title={o.number} /> },
+          { key: 'no', label: 'Order', render: (o) => <Primary mono title={o.number} href={`/sales/orders/${o.id}`} /> },
           { key: 'cu', label: 'Customer', render: (o) => o.customer_name },
           { key: 'title', label: 'Title', render: (o) => <Primary title={o.title || '—'} sub={o.customer_reference ? `PO ${o.customer_reference}` : undefined} /> },
           { key: 'date', label: 'Date', render: (o) => formatDate(o.order_date) },

@@ -1,7 +1,11 @@
 'use client';
 
+import type { ReactNode } from 'react';
+import { Button } from '@/components/ui/Button';
 import { Restricted } from '@/components/ui/Restricted';
+import { Spinner } from '@/components/ui/Spinner';
 import { useModules } from '@/lib/api/hooks';
+import { errorMessage } from '@/lib/api/client';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { canAccess, findNavItem, isVisible } from '@/lib/navigation';
 
@@ -11,17 +15,23 @@ interface Props {
   itemId: string;
   group: string;
   subSlug: string | null;
+  children?: ReactNode;
 }
 
 /**
- * A planned business module route. Disabled optional modules and modules
- * outside the user's role show the prototype's restricted card instead.
+ * Shared guard for working and planned module routes. Do not mount child
+ * controls until the installation's module configuration has loaded.
  */
-export function ModuleRoute({ itemId, group, subSlug }: Props) {
+export function ModuleRoute({ itemId, group, subSlug, children }: Props) {
   const { can, user } = useAuth();
-  const { states, loading } = useModules();
+  const { states, loading, error, refresh } = useModules();
   const item = findNavItem(itemId);
   const sub = item.subs?.find((s) => s.slug === subSlug) ?? null;
+
+  if (loading) return <div className="p-7"><Spinner /></div>;
+  if (error) return <Restricted title="Module settings unavailable">
+    {errorMessage(error)} <Button size="sm" onClick={()=>void refresh()}>Try again</Button>
+  </Restricted>;
 
   if (!loading && (!isVisible(item, states) || (sub && !isVisible(sub, states)))) {
     return (
@@ -39,5 +49,5 @@ export function ModuleRoute({ itemId, group, subSlug }: Props) {
       </Restricted>
     );
   }
-  return <PlannedModule item={item} group={group} current={sub} />;
+  return children ?? <PlannedModule item={item} group={group} current={sub} />;
 }

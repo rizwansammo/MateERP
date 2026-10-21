@@ -1,5 +1,9 @@
 # New database per run; keeps financial fixtures away from the development installation.
-param([switch]$SkipBuild, [string]$TestFile)
+param(
+    [switch]$SkipBuild,
+    [string]$TestFile,
+    [ValidateRange(60,900)][int]$BackendStartupTimeoutSeconds = 600
+)
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 $savedUrl = $env:MATEERP_BACKEND_URL
@@ -15,11 +19,24 @@ try {
     docker compose --profile e2e up -d backend-e2e
     if ($LASTEXITCODE -ne 0) { throw 'Unable to start isolated browser-test backend.' }
     $ready = $false
-    for ($i = 0; $i -lt 60; $i++) {
+    # A fresh database applies the complete history; Windows bind mounts can be slow.
+    # Keep a bounded deadline and stop promptly on an actual migration/startup failure.
+    $deadline = [DateTime]::UtcNow.AddSeconds($BackendStartupTimeoutSeconds)
+    $attempt = 0
+    while ([DateTime]::UtcNow -lt $deadline) {
+        $attempt++
         try {
             $response = Invoke-WebRequest 'http://127.0.0.1:8101/api/v1/health/' -UseBasicParsing -TimeoutSec 2
             if ($response.StatusCode -eq 200) { $ready = $true; break }
         } catch { Start-Sleep -Seconds 1 }
+        if ($attempt % 10 -eq 0) {
+            $state = docker compose ps --all --format '{{.State}}' backend-e2e
+            if ($LASTEXITCODE -ne 0) { throw 'Unable to inspect the isolated browser-test backend.' }
+            if ($state -match 'exited|dead') {
+                docker compose logs --tail 30 backend-e2e
+                throw 'Browser-test backend stopped during migration/startup.'
+            }
+        }
     }
     if (-not $ready) { docker compose logs --tail 30 backend-e2e; throw 'Browser-test backend did not become ready.' }
     Push-Location frontend

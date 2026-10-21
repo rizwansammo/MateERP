@@ -92,11 +92,22 @@ def _key(key):
 
 
 @transaction.atomic
-def record_transaction(request, data, key):
+def record_transaction(request, data, key, *, historical_treatment=None):
     enabled()
     require(request.user, "founder.transactions.manage")
     lock_company()
     _key(key)
+    from apps.accounting.models import HistoricalRecord
+
+    historical = HistoricalRecord.objects.filter(
+        external_reference=data.get("reference", "").strip().upper()
+    ).first()
+    if historical and not historical_treatment:
+        raise BusinessRuleViolation(
+            "This reference belongs to documented historical evidence. Use "
+            "its independently reviewed treatment to prevent duplicate "
+            "recognition."
+        )
     identity = posting.fingerprint(strings(data))
     existing = Tx.objects.filter(client_key=key).first()
     if existing:
@@ -130,7 +141,7 @@ def record_transaction(request, data, key):
             "expense_date": on,
             "payment_mode": "founder",
         }
-        expense = save_expense(request, payload)
+        expense = save_expense(request, payload, historical_treatment=historical_treatment)
         value = expense.total
     else:
         value = positive(data["amount"], currency)

@@ -29,6 +29,13 @@ SUBLEDGER_CONTROLS = frozenset(
         "founder_equity",
         "share_capital",
         "share_premium",
+        "inventory",
+        "grni",
+        "unbilled_revenue",
+        "deferred_revenue",
+        "fixed_assets",
+        "accumulated_depreciation",
+        "asset_acquisition",
     }
 )
 

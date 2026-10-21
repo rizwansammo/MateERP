@@ -25,6 +25,7 @@ class CorporateTransaction(IdentifiedRecord):
                 "loan_repayment",
                 "reclassify",
                 "reassign",
+                "opening",
             )
         ],
     )

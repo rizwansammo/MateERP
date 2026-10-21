@@ -80,6 +80,8 @@ def save_account(request, data, pk=None):
         setattr(obj, k, v)
     if not obj.normal_side:
         obj.normal_side = "debit" if obj.account_type in ("asset", "expense") else "credit"
+    if obj.control == "accumulated_depreciation" and "normal_side" not in data and not historical:
+        obj.normal_side = "credit"
     control_types = {
         "fx_gain": "revenue",
         "fx_loss": "expense",
@@ -94,6 +96,13 @@ def save_account(request, data, pk=None):
         "founder_equity": "equity",
         "share_capital": "equity",
         "share_premium": "equity",
+        "inventory": "asset",
+        "grni": "liability",
+        "unbilled_revenue": "asset",
+        "deferred_revenue": "liability",
+        "fixed_assets": "asset",
+        "accumulated_depreciation": "asset",
+        "asset_acquisition": "asset",
     }
     if obj.control and (
         obj.control not in control_types or control_types[obj.control] != obj.account_type
@@ -111,6 +120,13 @@ def save_account(request, data, pk=None):
         "founder_equity",
         "share_capital",
         "share_premium",
+        "inventory",
+        "grni",
+        "unbilled_revenue",
+        "deferred_revenue",
+        "fixed_assets",
+        "accumulated_depreciation",
+        "asset_acquisition",
     ) and (obj.currency or not obj.is_postable):
         raise ValidationError(
             {"control": "Subledger control accounts must be postable and multi-currency."}

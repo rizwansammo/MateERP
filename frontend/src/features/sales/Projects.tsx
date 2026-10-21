@@ -52,10 +52,10 @@ export function ProjectsPage() {
     ]} />{editing && <ProjectDrawer onClose={() => setEditing(false)} />}
   </Screen>;
 }
-interface Financials { currency: string; contract_value: string; invoiced: string; collected: string; outstanding: string; uninvoiced: string; costs: string; margin: string;
+interface Financials { currency: string; contract_value: string; invoiced: string; collected: string; outstanding: string; uninvoiced: string; costs: string | null; margin: string | null;
   base_currency: string; base_revenue: string; base_costs: string; base_margin: string; note: string;
   milestones: { id: number; name: string; percent: string; amount: string; invoice: { id: number; number: string | null; status: string } | null }[];
-  cost_lines: { kind: string; id: number; number: string; amount: string; currency: string; base_amount: string; date: string; party: string }[]; }
+  cost_lines: { kind: string; id: number | string; number: string; amount: string; currency: string; base_amount: string; date: string; party: string; route?: string }[]; }
 export function ProjectDetail({ id }: { id: string }) {
   const { can } = useAuth(); const router = useRouter(); const money = useMoney(); const [edit, setEdit] = useState(false); const [busy, setBusy] = useState(false);
   const project = useApi<Project>(`/sales/projects/${id}/`); const financials = useApi<Financials>(`/billing/projects/${id}/financials/`); const p = project.data; const f = financials.data;
@@ -65,7 +65,7 @@ export function ProjectDetail({ id }: { id: string }) {
     {f && <><StatGrid minWidth={160} stats={(['contract_value', 'invoiced', 'collected', 'outstanding'] as const).map(k => ({ label: k.replace('_', ' '), value: money(f[k], f.currency), accentBar: true }))} /><StatGrid minWidth={180} stats={([{ label: 'Net posted revenue', value: f.base_revenue }, { label: 'Posted project costs', value: f.base_costs }, { label: 'Posted margin', value: f.base_margin }]).map(s => ({ label: `${s.label} · ${f.base_currency}`, value: money(s.value, f.base_currency), accentBar: true }))} /><p className="text-[12px] text-tx3">{f.note}</p></>}
     <Card title="Milestone billing"><Table><THead><TR><TH>Milestone</TH><TH>Share</TH><TH align="right">Amount</TH><TH>Invoice</TH></TR></THead><TBody>{f?.milestones.map(m => <TR key={m.id}><TD>{m.name}</TD><TD>{m.percent}%</TD><TD align="right">{money(m.amount, f.currency)}</TD><TD>{m.invoice ? <Link href={`/sales/invoices/${m.invoice.id}`}>{m.invoice.number ?? 'Draft'} · {m.invoice.status}</Link> : can('invoices.create') ? <Button size="xs" disabled={busy} onClick={() => void bill(m.id)}>Create invoice</Button> : 'Unbilled'}</TD></TR>)}{f?.milestones.length === 0 && <TR><TD colSpan={4}>No milestones configured.</TD></TR>}</TBody></Table></Card>
     <InvoiceTable projectId={Number(id)} title="Project invoices" />
-    <Card title="Posted project costs"><Table><THead><TR><TH>Record</TH><TH>Date</TH><TH>Vendor</TH><TH align="right">Expense amount</TH><TH align="right">Historical base cost</TH></TR></THead><TBody>{f?.cost_lines.map(c => <TR key={`${c.kind}-${c.id}`}><TD><Link className="text-pr" href={`/purchases/${c.kind === 'Expense' ? 'expenses' : 'bills'}/${c.id}`}>{c.number}</Link></TD><TD>{c.date}</TD><TD>{c.party || '—'}</TD><TD align="right">{money(c.amount, c.currency)}</TD><TD align="right">{money(c.base_amount, f.base_currency)}</TD></TR>)}{f?.cost_lines.length === 0 && <TR><TD colSpan={5}>No posted project costs.</TD></TR>}</TBody></Table></Card>
+    <Card title="Posted project costs"><Table><THead><TR><TH>Record</TH><TH>Date</TH><TH>Vendor</TH><TH align="right">Expense amount</TH><TH align="right">Historical base cost</TH></TR></THead><TBody>{f?.cost_lines.map(c => <TR key={`${c.kind}-${c.id}-${c.currency}`}><TD><Link className="text-pr" href={c.route ?? `/purchases/${c.kind === 'Expense' ? 'expenses' : 'bills'}/${c.id}`}>{c.number}</Link></TD><TD>{c.date}</TD><TD>{c.party || '—'}</TD><TD align="right">{money(c.amount, c.currency)}</TD><TD align="right">{money(c.base_amount, f.base_currency)}</TD></TR>)}{f?.cost_lines.length === 0 && <TR><TD colSpan={5}>No posted project costs.</TD></TR>}</TBody></Table></Card>
     {edit && p && <ProjectDrawer project={p} onClose={() => setEdit(false)} />}
   </Screen>;
 }

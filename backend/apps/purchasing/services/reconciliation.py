@@ -10,6 +10,30 @@ from ..models import Expense, VendorBill
 POSTED = ("posted", "partially_paid", "paid")
 
 
+def receiving():
+    from ..models import GoodsReceipt, ReceiptBillMatch, ReceiptCostCorrection, SupplierReturn
+
+    received = GoodsReceipt.objects.filter(kind="goods").aggregate(v=Sum("base_value"))["v"] or ZERO
+    corrected = ReceiptCostCorrection.objects.aggregate(v=Sum("base_delta"))["v"] or ZERO
+    returned = SupplierReturn.objects.aggregate(v=Sum("base_value"))["v"] or ZERO
+    matched = (
+        ReceiptBillMatch.objects.filter(
+            receipt__kind="goods", bill_line__bill__status__in=POSTED
+        ).aggregate(v=Sum("base_value"))["v"]
+        or ZERO
+    )
+    _, ledger = gl_balance("grni", credit_normal=True)
+    return {
+        "received_base": received,
+        "corrections_base": corrected,
+        "returned_base": returned,
+        "matched_base": matched,
+        "unmatched_base": received + corrected - returned - matched,
+        "ledger": ledger,
+        "difference": ledger - (received + corrected - returned - matched),
+    }
+
+
 def payables():
     bills = VendorBill.objects.filter(status__in=POSTED).aggregate(
         t=Sum("base_total"), s=Sum("base_settled")

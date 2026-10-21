@@ -24,8 +24,11 @@ export function amount(
   grouping = "international",
 ): string {
   if (value === undefined) return "—";
-  const places = currency === "JPY" || currency === "KRW" ? 0 : 2;
+  const currencyPlaces = currency === "JPY" || currency === "KRW" ? 0 : 2;
   try {
+    // Unit prices/costs can have finer precision than posted currency amounts.
+    // Preserve those digits while retaining the usual minimum currency scale.
+    const places = Math.max(currencyPlaces, (value.split(".")[1] ?? "").replace(/0+$/, "").length);
     const exact = decimal(minor(value, places), places);
     const [whole = "0", fraction] = exact.split(".");
     const sign = whole.startsWith("-") ? "−" : "";
@@ -36,6 +39,6 @@ export function amount(
         : digits.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
     return `${currency ? `${currency} ` : ""}${sign}${grouped}${fraction !== undefined ? `.${fraction}` : ""}`;
   } catch {
-    return value;
+    return `${currency ? `${currency} ` : ""}${value}`;
   }
 }

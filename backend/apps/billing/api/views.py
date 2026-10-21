@@ -573,25 +573,11 @@ class ProjectFinancialsView(APIView):
             )["total"]
             or ZERO
         )
-        net_revenue = (totals["net_revenue"] or ZERO) - credited_revenue
-        from django.db.models import F, Q
-
-        from apps.accounting.models import JournalLine
+        net_invoiced = (totals["net_revenue"] or ZERO) - credited_revenue
         from apps.company.models import CompanyProfile
+        from apps.reporting.attribution import project_revenue
 
-        base_revenue = (
-            JournalLine.objects.filter(
-                Q(journal_id__in=issued.values("journal_id"))
-                | Q(
-                    journal_id__in=CreditNote.objects.filter(
-                        invoice__project=project, status="issued"
-                    ).values("journal_id")
-                ),
-                account__account_type="revenue",
-                journal__status="posted",
-            ).aggregate(value=Sum(F("base_credit") - F("base_debit")))["value"]
-            or ZERO
-        )
+        base_revenue, net_revenue = project_revenue(project)
         milestones = []
         for m in project.milestones.all():
             inv = (
@@ -619,19 +605,24 @@ class ProjectFinancialsView(APIView):
                     "net_revenue": net_revenue,
                     "collected": totals["paid"] or ZERO,
                     "outstanding": invoiced - (totals["paid"] or ZERO),
-                    "uninvoiced": max(project.contract_value - net_revenue, ZERO),
+                    "uninvoiced": max(project.contract_value - net_invoiced, ZERO),
                     "costs": costs["total"],
                     "cost_lines": costs["lines"],
-                    "margin": net_revenue - costs["total"],
+                    "margin": net_revenue - costs["total"]
+                    if net_revenue is not None and costs["total"] is not None
+                    else None,
                     "base_currency": CompanyProfile.objects.get().base_currency,
                     "base_revenue": base_revenue,
                     "base_costs": costs["base_total"],
                     "base_margin": base_revenue - costs["base_total"],
                     "milestones": milestones,
-                    "note": "Profitability uses historical posted GL values in base currency, "
-                    "net of credit notes and recoverable tax. Costs include all project currencies "
-                    "and exclude capitalized assets. Contract and collection amounts "
-                    "use project currency.",
+                    "note": "Profitability uses source-owned posted GL values, including control "
+                    "transfer, returns, asset reclassification and depreciation. Recoverable tax "
+                    "and asset cost are excluded from expenses. Base margin includes every source "
+                    "currency; native margin is unavailable when currencies differ. Contract, "
+                    "invoicing and collections retain their own meanings and project currency. "
+                    "Analytical project reclassification does not rewrite financial "
+                    "source identity.",
                 }
             )
         )

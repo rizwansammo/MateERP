@@ -35,6 +35,9 @@ class FileContentView(APIView):
         )
         response["X-Content-Type-Options"] = "nosniff"
         sensitive = stored.purpose in (
+            FilePurpose.HISTORICAL_EVIDENCE,
+            FilePurpose.PROCUREMENT_EVIDENCE,
+            FilePurpose.ASSET_EVIDENCE,
             FilePurpose.BANK_PROOF,
             FilePurpose.CLIENT_DOCUMENT,
             FilePurpose.VENDOR_DOCUMENT,

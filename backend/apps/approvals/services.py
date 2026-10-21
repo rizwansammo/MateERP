@@ -170,7 +170,14 @@ def frozen_policy(action):
         return {}
     # Existing Phase 2–4 requests keep their current policy behavior. Ownership
     # freezes governance so an edit cannot reduce the votes a proposal needs.
-    if policy.category != "ownership_changes":
+    if policy.category not in ("ownership_changes", "purchase_orders") and action not in (
+        "historical.review",
+        "stock_count.post",
+        "receipt_cost.post",
+        "supplier_return.post",
+        "asset.post",
+        "budget.publish",
+    ):
         return {}
     return {
         "required_approvals": policy.required_approvals,

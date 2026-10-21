@@ -237,6 +237,9 @@ def report(which, start, end):
             difference=closing - opening - receipts + payments - fx,
             classification="Cash movement; statutory cash-flow classification arrives in Phase 6.",
         )
+        from apps.reporting.cash_flow import classified_statement
+
+        out = classified_statement(out, start, end)
     else:
         out["rows"] = rows
     out["rows"] = hierarchy(out["rows"])

@@ -152,7 +152,8 @@ def test_business_settings_and_numbering_validation(admin_client, company):
 
 def test_modules_toggle_persist_and_are_server_side(admin_client, make_user, client_for):
     modules = {m["key"]: m for m in admin_client.get("/api/v1/modules/").json()["optional"]}
-    assert modules["inventory"]["enabled"] and not modules["inventory"]["implemented"]
+    assert modules["inventory"]["enabled"] and modules["inventory"]["implemented"]
+    assert all(m["implemented"] for m in modules.values())
 
     response = admin_client.put("/api/v1/modules/inventory/", {"enabled": False}, format="json")
     assert response.status_code == 200 and response.json()["enabled"] is False

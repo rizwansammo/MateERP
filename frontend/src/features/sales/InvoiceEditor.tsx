@@ -367,7 +367,7 @@ function InvoiceEditorForm({ id, initial }: { id?: string; initial?: Invoice }) 
             </div>
           </Section>
           <Section n="03" title="Line items" aside="Billing items or free-text lines — no catalog record required">
-            <LinesEditor lines={lines} onChange={change(setLines)} currency={currency} calc={calc.result} accountKind="revenue" />
+            <LinesEditor lines={lines} onChange={change(setLines)} currency={currency} date={issueDate} pricesIncludeTax={inclusive} calc={calc.result} accountKind="revenue" />
             <div className="flex flex-wrap items-start justify-between gap-4 border-t border-bd px-4 pt-3 pb-4">
               <div className="flex flex-col gap-3">
                 <Button size="sm" icon="add" onClick={() => change(setLines)([...lines, blankLine(lines[lines.length - 1]?.tax_code_id ?? '')])}>

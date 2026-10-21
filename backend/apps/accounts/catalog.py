@@ -83,6 +83,7 @@ PERMISSIONS: tuple[PermissionDef, ...] = (
     ),
     PermissionDef("banking.evidence.view", "View banking evidence", "finance"),
     PermissionDef("reports.export", "Export financial reports", "finance"),
+    PermissionDef("reports.classify", "Review cash-flow classifications", "finance"),
     # Founder finance
     PermissionDef("founder.view", "View founder finance", "founder"),
     PermissionDef("founder.transactions.manage", "Manage founder transactions", "founder"),
@@ -107,6 +108,13 @@ PERMISSIONS: tuple[PermissionDef, ...] = (
     PermissionDef("ownership.consent", "Authorize own ownership changes", "founder"),
     PermissionDef("ownership.attest", "Record external shareholder authorization", "founder"),
     # Operations
+    PermissionDef("catalog.manage", "Manage product catalog and prices", "operations"),
+    PermissionDef("fulfillment.manage", "Manage documented sales fulfillment", "operations"),
+    PermissionDef("procurement.approve", "Approve purchase orders", "operations"),
+    PermissionDef("inventory.post", "Post inventory valuation and adjustments", "operations"),
+    PermissionDef("assets.post", "Post asset capitalization and depreciation", "operations"),
+    PermissionDef("budgets.approve", "Approve budget revisions", "operations"),
+    PermissionDef("onboarding.manage", "Manage reviewed financial cutover", "operations"),
     PermissionDef("procurement.manage", "Manage procurement", "operations"),
     PermissionDef("inventory.manage", "Manage inventory", "operations"),
     PermissionDef("assets.manage", "Manage fixed assets", "operations"),

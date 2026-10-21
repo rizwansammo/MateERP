@@ -100,7 +100,9 @@ class VendorAllocationInput(s.Serializer):
 class CorporateInput(s.Serializer):
     client_key = s.CharField(min_length=8, max_length=160)
     kind = s.ChoiceField(
-        choices=[k for k, _ in m.CorporateTransaction._meta.get_field("kind").choices]
+        choices=[
+            k for k, _ in m.CorporateTransaction._meta.get_field("kind").choices if k != "opening"
+        ]
     )
     classification = s.ChoiceField(
         choices=[k for k, _ in m.CorporateTransaction._meta.get_field("classification").choices]
@@ -132,6 +134,8 @@ class CorporateInput(s.Serializer):
                 "prices_include_tax",
                 "project_id",
                 "notes",
+                "original_transaction_date",
+                "recognition_reason",
             }
             if not data.get("expense") or set(data["expense"]) - permitted:
                 raise s.ValidationError({"expense": "Provide supported expense fields."})

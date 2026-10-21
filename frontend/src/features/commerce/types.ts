@@ -421,6 +421,8 @@ export interface Expense {
   vendor_name: string | null;
   project_id: number | null;
   expense_date: string;
+  original_transaction_date?: string | null;
+  recognition_reason?: string;
   due_date: string | null;
   description: string;
   currency: string;

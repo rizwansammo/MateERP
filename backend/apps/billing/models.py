@@ -665,3 +665,14 @@ class RecurringInvoiceRun(models.Model):
 
     def __str__(self):
         return f"{self.schedule_id}@{self.occurrence_date}"
+
+
+from .fulfillment_models import (  # noqa: E402, F401
+    ControlTransfer,
+    CustomerReturn,
+    DeferredCreditAllocation,
+    Dispatch,
+    DispatchRecall,
+    FulfillmentPolicy,
+    InvoiceRecognitionBinding,
+)

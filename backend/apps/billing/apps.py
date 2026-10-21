@@ -21,6 +21,27 @@ class BillingConfig(AppConfig):
         register_source("credit_note", {"issue": ("credit_notes.manage",)})
         register_source("credit_application", {"apply": ("payments.record",)})
         register_source("customer_refund", {"pay": ("credit_notes.manage",)})
+        register_source(
+            "fulfillment_control",
+            {
+                "post": (
+                    "fulfillment.manage",
+                    "inventory.post",
+                    "invoices.issue",
+                    "finance.view",
+                )
+            },
+        )
+        register_source(
+            "customer_return",
+            {
+                "receive": (
+                    "fulfillment.manage",
+                    "inventory.post",
+                    "finance.view",
+                )
+            },
+        )
 
         register_executor(
             "invoice.approve", invoices.execute_approval, decider_permissions=("invoices.issue",)

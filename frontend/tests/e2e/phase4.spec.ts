@@ -196,10 +196,11 @@ test('Q, S, T — approval affects issuance and published branding cannot rewrit
   expect((await get<{ difference: string }>(page, '/purchasing/reconciliation/')).difference).toMatch(/^0(?:\.0+)?$/);
 });
 
-test('U, V — Phase 4 routes, planned Phase 6 purchasing, themes and responsive shell', async ({ page }) => {
+test('U, V — Phase 4 routes, integrated purchasing, themes and responsive shell', async ({ page }) => {
   test.setTimeout(120_000);
   for (const route of ['/sales/overview', '/sales/customers', '/sales/orders', '/sales/invoices', '/sales/payments', '/sales/receipts', '/sales/recurring', '/sales/credits', '/sales/projects', '/purchases/overview', '/purchases/expenses', '/purchases/recurring', '/purchases/vendors', '/purchases/bills', '/purchases/history', '/client-documents', '/vendor-documents']) { await page.goto(route); await expect(page.getByRole('heading', { level: 1 })).toBeVisible(); await expect(page.getByText('Application error')).toHaveCount(0); }
-  await page.goto('/purchases/orders'); await expect(page.getByText(/Phase 6/).first()).toBeVisible();
+  await page.goto('/purchases/orders'); await expect(page.getByRole('heading', { name: 'Purchase Orders', exact: true })).toBeVisible();
+  await expect(page.getByTestId('planned-notice')).toBeHidden();
   await page.goto('/sales/overview'); await expect(page.getByRole('img', { name: 'Invoiced vs collected' })).toBeVisible(); await page.evaluate(() => document.fonts.ready); await page.screenshot({ path: 'test-results/phase4-sales-light.png' });
   await expect(page.getByRole('complementary', { name: 'Sidebar' })).toHaveCSS('width', '264px'); await expect(page.getByRole('banner')).toHaveCSS('height', '56px');
   await page.getByRole('button', { name: 'Collapse sidebar' }).click(); await expect(page.getByRole('complementary', { name: 'Sidebar' })).toHaveCSS('width', '64px'); await page.screenshot({ path: 'test-results/phase4-sales-compact.png' }); await page.getByRole('button', { name: 'Expand sidebar' }).click();

@@ -136,7 +136,7 @@ The established framework versions are retained. WeasyPrint runs inside Linux Do
 2. Set revenue/expense defaults and billing items at `/sales/setup`. Configure applicable tax revisions and FX accounts/rates.
 3. Publish invoice/receipt branding. Issued documents freeze company identity, line/tax values and the published version.
 4. Use Sales for customers, orders, projects, invoices, payments, receipts and credits. Customer payments require a different authorized verifier. Pending verification/approval has no posted cash or official receipt.
-5. Use Purchases for vendors, bills, accrued/paid expenses and reviewed payments. Foreign-payment previews require explicit confirmation of nonzero disclosed FX differences. Purchase orders remain Phase 6.
+5. Use Purchases for vendors, bills, accrued/paid expenses and reviewed payments. Foreign-payment previews require explicit confirmation of nonzero disclosed FX differences. Purchase orders and receiving are described in the Phase 6 section below.
 6. Client/Vendor Documents file generated PDFs automatically and accept authorized PDF/PNG/JPEG/WEBP evidence up to 10 MB. Bank proofs require evidence permission for metadata and bytes. Archive uploaded evidence with a reason; historical official PDFs remain retained.
 
 PDF failure does not duplicate a successfully issued financial record. Open its detail page and use **Retry PDF**. This renders the frozen snapshot and preserves the first ready PDF. Investigate errors through request IDs and backend logs.
@@ -183,4 +183,80 @@ npm run dev
 
 New migrations are additive. They retain existing financial data, backfill original recovery links under the migration's exclusive schema transaction, and enable mandatory ownership governance with an attributed system audit event. They never seed founders, default agreements, loans, shares or cash. Evidence remains in the existing private storage volume; no new infrastructure service or scheduler is introduced.
 
-Full verification remains `powershell -ExecutionPolicy Bypass -File scripts\verify.ps1`. Focused browser acceptance is `powershell -ExecutionPolicy Bypass -File scripts\e2e.ps1 -TestFile phase5.spec.ts`. Each browser run creates and retains its own `mateerp_e2e_<uuid>` database/files on backend 8101. Never aim fixtures at development. After E2E, rebuild the normal frontend with backend URL 8100 before using `npm run start`; a test build intentionally proxies to 8101. Phase 6 requires a separate owner approval.
+Full verification remains `powershell -ExecutionPolicy Bypass -File scripts\verify.ps1`. Focused browser acceptance is `powershell -ExecutionPolicy Bypass -File scripts\e2e.ps1 -TestFile phase5.spec.ts`. Each browser run creates and retains its own `mateerp_e2e_<uuid>` database/files on backend 8101. Never aim fixtures at development. After E2E, rebuild the normal frontend with backend URL 8100 before using `npm run start`; a test build intentionally proxies to 8101. Phase 6 has owner approval; Phase 7 requires a separate review and approval.
+
+
+## Phase 6 local setup and operations
+
+The existing backend/database/native frontend arrangement is unchanged. Apply only
+additive migrations with `docker compose exec backend python manage.py migrate`;
+never reset/flush a database or remove its volumes. Enable the desired optional
+modules in Settings → Modules, and grant the narrow new permissions explicitly.
+Existing non-administrator roles do not automatically receive sensitive additions.
+
+1. In Chart of Accounts configure unused postable Inventory (asset), GRNI
+   (liability), Unbilled revenue (asset), Deferred revenue (liability), Fixed assets
+   (asset) and Accumulated depreciation (credit-normal asset) controls as needed.
+   Existing balances are never relabelled by migrations. Keep the existing FX,
+   fiscal-period, bank, tax, AR/AP and revenue/expense setup.
+2. Products & Services: create units/categories, classify existing or new stable
+   item identities and assign revenue, purchase, inventory and COGS mappings. Add
+   reasoned effective-dated prices. Commercial drawers offer **Use dated price**;
+   tax basis must match the document. Applying a quote is explicit. **Margin
+   scenario** calculates an assumed-cost comparison; it is not realized GL profit.
+3. Purchases → Purchase Orders: draft, submit/review, issue, receive counted goods
+   or accept services. Upload private evidence. Match vendor bill lines to retained
+   receipts; exact historical consideration clears GRNI once. Review supplier price
+   differences before matching. Supplier-accepted returns cancel unmatched receipt
+   consideration and retain cost variance. Resolve existing bill matches/corrections
+   first; a return cannot bypass paid/reconciled liability restrictions.
+4. Inventory: maintain company-owned locations, inspect quantities/value and GL
+   differences, transfer stock or submit retained counts. Cost corrections require
+   accounting authority, an original event, signed value and approval where configured.
+   Earlier movements requiring silent recosting are rejected. No negative stock.
+5. Confirmed sales orders: document the control-transfer policy and contract evidence.
+   Dispatch records company-owned transit; explicit customer acceptance transfers
+   control and recognizes revenue/COGS. Invoicing still controls AR/tax, with the
+   appropriate unbilled/deferred clearing. Accepted returns are separate from credits.
+6. Fixed Assets: select a real posted acquisition source, claim historical cost,
+   set available-for-use/life/residual and inspect the planned schedule. Post each
+   earliest service month explicitly; delayed recognition requires its reason and
+   authority. Estimates are prospective. Sale disposal references a real issued
+   asset-sale invoice; collections still require existing payment verification.
+   Unused capitalization may be reversed before depreciation/disposal, retaining
+   history. Replacements cannot predate the source-claim release. No background
+   depreciation service or operating-system task is installed.
+7. Budgets & Costs: configure cost centers and classify posted source lines with
+   documented analytical overlays. Prepare monthly/annual budget revisions and obtain
+   independent approval. Compare original/revised plans with posted actuals and drill
+   to journals. Funding forecasts remain in Founder Finance → Expense Sharing; they
+   are never added to actual expenditure or company cash balances.
+8. Purchases → Historical Entry & Cutover: document old activity one item at a time,
+   including original date/currency/payment source and support. Evidence alone has
+   no GL effect. Independently review reconstruction, opening-only balances or links
+   to an already verified existing source. Pre-registration evidence requires explicit
+   corporate adoption before corporate treatment. Original and recognition dates
+   remain visible. Preserve old periods, rates and reconciliation restrictions; do
+   not enter the same original reference again through an ordinary expense/founder
+   workflow. A cutover is not permission to invent historical bank movements.
+9. Reports & Analytics / Dashboard: choose dates and source filters, inspect posted
+   financial/operational activity and export authorized bounded CSV. Native currencies
+   remain separate. Cash-flow reviews classify existing movements with an exact total;
+   unclassified and opening/cutover amounts stay disclosed. Reports never balance
+   themselves by creating journals.
+
+Run `powershell -ExecutionPolicy Bypass -File scripts\verify.ps1` for all checks.
+Focused browser checks use `scripts\e2e.ps1 -TestFile phase6.spec.ts`; every run
+creates and retains its own isolated database on backend8101. The optional local
+`MATEERP_PROTOTYPE_URL` enables a reference screenshot during that test. The prototype
+is always read-only. After E2E, rebuild for backend8100 before using the native
+production preview. Do not use a test build against the development database.
+
+Fresh isolated databases apply the entire migration history. On slower Windows
+bind mounts the E2E runner allows up to 600 seconds for startup; adjust its
+`-BackendStartupTimeoutSeconds` parameter (60–900) if needed. It still fails
+promptly if the isolated backend actually exits. Vitest uses two workers to keep
+the complete browser-like unit suite reliable alongside Docker on Windows.
+
+Phase 6 completion evidence is recorded in docs/phase-06-summary.md. Phase 7 remains
+outside this assignment and requires a separate owner approval.

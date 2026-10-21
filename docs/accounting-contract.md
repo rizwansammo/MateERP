@@ -91,7 +91,7 @@ Issued invoices/credit notes/receipts retain immutable snapshots and a published
 
 Client filing follows invoice issue year even for later collections. Multi-invoice receipts reference the same stored PDF from each invoice bundle. Vendor filing follows document year/month/vendor/type. Generated PDFs cannot be refiled or archived; uploaded evidence can be archived with a reason while its private file and audit history remain. Metadata and download access both enforce reference/purpose permissions, including the separate bank-evidence permission.
 
-Recurring invoices default to drafts; auto-issue requires explicit authorization that is rechecked on every run. Recurring expenses generate drafts for review. Schedule/date uniqueness and row locks prevent duplicate occurrences. Failed runs can be retried, and owner permission revocation prevents unauthorized unattended processing. Phase 6 purchase orders remain outside this implementation.
+Recurring invoices default to drafts; auto-issue requires explicit authorization that is rechecked on every run. Recurring expenses generate drafts for review. Schedule/date uniqueness and row locks prevent duplicate occurrences. Failed runs can be retried, and owner permission revocation prevents unauthorized unattended processing. Purchase orders and receiving use the distinct Phase 6 source contracts below.
 
 ## Phase 5 source and recovery contract
 
@@ -104,3 +104,44 @@ Founder-funded expenses reuse purchasing's exact tax/debit calculation and its s
 Founder payables, principal loans and pending funding reconcile independently from immutable source obligations/settlements to their protected GL controls. Recognized other equity and share capital/premium reconcile from frozen source valuations. Corporate statements read actual protected journal movements, including reversals, with separate running balances per party/control/currency. Personal statements and funding forecasts never contribute to these totals.
 
 Planning references actual recurrence/date identities and actual payment records. Pledges, expected costs, reserve targets and funding designations are not accounting entries. Check real ledger cash coverage before designation, allocate each verified receipt once, and link consumption to the actual matching payment. Preserve source/forecast/reserve revisions and all releases/rollovers. No manual posting API can write founder control balances.
+
+
+## Phase 6 source contracts
+
+- Inventory: a company/item weighted-average pool, six-decimal quantities and
+  currency minor-unit value. Final depletion removes exact residual value. Location
+  transfers retain paired provenance without journals. No negative stock or earlier
+  event that would silently recost later movements. Corrections post in a permitted
+  period; retained counts freeze sequence/quantity/value through approval.
+- Receipts: accepted tracked goods post Inventory/GRNI at original acquisition FX;
+  service acceptance posts no stock. Frozen PO authorization has no journal. Exact
+  receipt matching clears GRNI against AP without purchasing stock twice. Reviewed
+  unmatched price corrections split retained/consumed cost and retain both amounts.
+- Supplier returns: accepted cancellation of unmatched receipt consideration only.
+  Original remaining native/base values are allocated exactly; current company
+  weighted-average stock removal is separate, with an explicit reviewed variance.
+  Existing bill/payment/reconciliation correction gates cannot be bypassed.
+- Recognition: dispatch retains company control. A documented contract policy owns
+  explicit transfer of control, COGS and recognized revenue. Before-invoice control
+  uses unbilled clearing; invoice-before-control uses deferred clearing. Mere timing
+  never selects policy. Issuance still owns AR and tax. Credits are distinct from
+  physical returns, and existing Phase 4 service/legacy behavior remains valid.
+- Assets: claim a real acquisition debit, excluding recoverable tax/stock. Base and
+  native claim allocations cannot exceed the original source. Source reclassification
+  does not repeat cash/AP. Straight-line estimates are prospective; posted charges
+  retain service/recognition dates. Disposal proceeds use existing issued billing;
+  payment verification remains separate. An unused capitalization may be reversed
+  in a permitted period before posted depreciation/disposal; original records remain.
+  Released claims cannot be reused before the release date.
+- Planning/reporting: approved budgets and analytical overlays never edit journals.
+  CAPEX actuals exclude disposal removal but include true capitalization reversals.
+  Company actuals, personal settlements and forecasts remain distinct. Aging uses
+  dated GL control allocations, not current settlement caches. Cash-flow reviews
+  allocate the exact existing movement and never post. Cutover is separately shown;
+  executive cash-received/paid metrics exclude opening/cutover and internal transfers.
+- Historical evidence retains original amount/currency/date/funding and private
+  support. Reconstruction, opening-only and verified-source linking are mutually
+  exclusive active dispositions per original reference. Independent adoption is
+  required, especially before corporate treatment of pre-registration expenditure.
+  Original and permitted accounting dates are both disclosed. Period, historical FX,
+  treasury carrying-value and reconciliation guards continue applying unchanged.

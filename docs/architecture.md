@@ -200,7 +200,7 @@ Recurrence uses unique schedule/date runs and explicit owner/runner permission c
 3. **Core accounting engine:** implemented; see Phase 3 acceptance report
 4. **Billing, expenses and documents:** implemented; see Phase 4 acceptance report
 5. **Founder finance and ownership:** implemented and verified; see Phase 5 acceptance report
-6. Business operations and reporting
+6. **Business operations and reporting:** implemented and locally verified; see Phase 6 acceptance report
 7. Security, final testing and release
 
 ## Founder finance and ownership boundaries
@@ -214,3 +214,36 @@ The planner reads existing recurring-expense identities, actual drafts/payments 
 `ownership` separates provisional percentage agreements from formal share classes and effective-dated register events. A proposal freezes its before/after register and affected-party requirements. Evidence and authenticated consent/authorized external attestation precede independent governance review. Approval records immutable distinct actor votes and frozen quorum; confirmation rechecks current eligibility, evidence, source identity and the effective-date sequence. Formal units, nominal capital, paid-in funding and unpaid subscriptions remain distinct.
 
 Private evidence uses the established validated storage and access-policy registry. PostgreSQL independently guards posted sources, allocations, confirmations, frozen ownership/approval identities, voting/consent history, reserve/funding changes and confirmed share balances. The existing company financial mutex serializes financial writes; no new infrastructure services were added.
+
+
+## Phase 6 domain integration
+
+`catalog` adds profiles/pricing to existing commercial identities. `purchasing`
+continues owning vendors/AP and now owns PO commitments, receipts, exact matching,
+accepted supplier cancellations and acquisition variances. `inventory` retains
+immutable physical/cost events and reconciles company weighted-average pools with
+the existing Inventory control. Locations never become independent ledgers.
+`billing` owns contractual fulfillment recognition; dispatch is distinct from
+control transfer, invoice issuance, returns and financial credits.
+
+`assets` claims real posted acquisition lines, retaining original currency/FX and
+native claim allocations, and posts capitalization, depreciation, disposal and
+unused-capitalization reversal through registered accounting authorities.
+`budgeting` adds approved immutable plans and append-only analytical dimensions.
+`reporting` composes posted GL and source selectors, dated aging, safe exports and
+retained cash-flow reviews. No balances, second ledger, recognition engine or new
+infrastructure service are introduced.
+
+Historical onboarding lives in accounting and prepares/references existing owning
+expense, founder funding and settlement workflows. It never replaces them. Original
+activity is evidence-only until independent adoption; mutually exclusive dispositions
+prevent a retained original reference from posting both reconstruction and opening
+balances. Personal founder evidence and bytes use the same participant-aware policy.
+Provenance reports explicitly separate opening-only from reconstructed activity.
+
+Optional-module delivery status is explicit in `company.reference.ModuleDef`;
+future definitions default to unimplemented. The shared frontend `ModuleRoute`
+guards working and planned routes, waits for module configuration and renders a
+restricted state on disabled modules or loading errors before mounting controls.
+Navigation visibility is a UX hint; source services independently enforce module
+and permission checks. Hiding a module never deletes its retained history.

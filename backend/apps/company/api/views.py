@@ -135,8 +135,7 @@ class NumberingPreviewView(APIView):
 
 def _modules_payload() -> list[dict]:
     states = services.module_states()
-    # No optional module is implemented yet; they arrive in Phases 5–6.
-    return [{**asdict(m), "enabled": states[m.key], "implemented": False} for m in OPTIONAL_MODULES]
+    return [{**asdict(m), "enabled": states[m.key]} for m in OPTIONAL_MODULES]
 
 
 @extend_schema(tags=["settings"])

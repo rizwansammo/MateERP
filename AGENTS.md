@@ -86,10 +86,10 @@ MateERP is NetaMate's commercial ERP. This repository is the **production applic
 - Forecasts reuse actual recurrence identities, exact tax and FX helpers. New source selection or policy changes create new snapshots. Reserve consumption links actual posted payments; partial use/releases and retained-funds rollover are audited and never duplicate cash.
 - Provisional 50:50 → 40:40:20 amendments do not issue formal units. Formal transfers/issuances require frozen evidence, affected-party consent, distinct independent governance votes and explicit documented confirmation. Linked shareholders act as themselves; external attestations identify the authorized operator and evidence.
 - New sensitive permissions are reviewed explicitly; existing non-admin grants are not silently expanded. Private founder/personal/ownership evidence is purpose/reference scoped. General journal responses mask founder identity dimensions unless authorized, without altering financial totals.
-- Keep `docs/phase-05-progress.md` current; use isolated E2E fixtures only. Do not begin Phase 6 without owner approval.
+- Preserve the Phase 5 checkpoints and use isolated E2E fixtures only. Phase 6 has owner approval; Phase 7 requires separate owner review and approval.
 
 ## Roadmap
-1. Foundation ✅ · 2. Auth & Administration ✅ · 3. Core Accounting Engine completed · 4. Billing, Expenses & Documents implemented · 5. Founder Finance & Ownership implemented and verified (acceptance reports in docs) · 6. Operations & Reporting · 7. Security, Final Testing & Release.
+1. Foundation ✅ · 2. Auth & Administration ✅ · 3. Core Accounting Engine completed · 4. Billing, Expenses & Documents implemented · 5. Founder Finance & Ownership implemented and verified · 6. Operations & Reporting implemented and locally verified (acceptance reports in docs) · 7. Security, Final Testing & Release pending owner approval.
 
 Work on one phase at a time and stop for user review at the end of each phase.
 
@@ -108,3 +108,50 @@ Work on one phase at a time and stop for user review at the end of each phase.
   - Backend: pytest against real PostgreSQL in the container.
   - Frontend: Vitest and Playwright through `localhost:3100` against an isolated per-run backend/database. The guarded e2e setup changes only test accounts and test settings. Each run retains its database and files for inspection; it never resets development data.
 - Never claim a check passed without running it.
+
+
+## Phase 6 conventions
+
+- `catalog` extends existing BillingItem IDs with tracked/nonstock/service profiles,
+  units, categories and append-only dated prices. Apply a server quote explicitly;
+  never silently reprice saved documents or use JavaScript money calculations.
+- Procurement owns frozen PO revisions, independent approvals, receipts/service
+  acceptance, exact bill matching, retained evidence, acquisition cost corrections
+  and supplier-accepted unmatched returns. Goods post Inventory/GRNI; matching
+  clears GRNI once. Supplier returns retain original consideration/FX, remove stock
+  at weighted-average cost and disclose an authorized cost variance. Posted/settled
+  bill consideration must be corrected through its owning workflow first.
+- Inventory uses company-wide weighted-average value with location quantities.
+  Company lock first; no negatives, no unsupported retroactive recosting. Transfers
+  have two retained legs and no GL effect. Counts/cost-only corrections freeze their
+  stock basis, obey approval policy and retain original-event links. Cost-only
+  corrections additionally need accounting.manage; never use them to hide GRNI/AP.
+- Dispatch is company-owned transit. Contract evidence defines transfer of control;
+  that explicit event recognizes stock COGS and contract revenue, using unbilled or
+  deferred clearing as appropriate. Invoicing, control and returns have distinct
+  source identities. Legacy Phase 4 invoice behavior remains unchanged. Credits do
+  not automatically restock goods; returns use their original fulfillment cost.
+- Assets claim real posted acquisition debits without repeating AP/cash. Frozen
+  historical/native cost, prospective straight-line estimates and actual monthly
+  charges are separate. Disposal reclassifies actual asset-sale invoicing, without
+  collecting cash again. Unused capitalization may be reversed before depreciation;
+  retain every record and release the claim only from the permitted reversal date.
+  Replacement claims/acquisition reversals cannot predate retained claim releases.
+- Budgets use immutable independently approved revisions and nonoverlapping scopes.
+  Actuals come from posted GL: operating/COGS, fixed-asset additions net of genuine
+  capitalization reversals (not disposal proceeds), and recoverable tax separately.
+  Cost-center/project analytical overlays are append-only and do not rewrite source
+  financial identity or founder sharing. Funding plans remain forecasts.
+- Historical onboarding records original dates/payment source/currency/evidence
+  without GL. Reconstruction, opening-only cutover and links to existing verified
+  sources are mutually exclusive reviewed dispositions. Pre-registration evidence
+  never automatically creates corporate expenses, capital or liabilities. Preserve
+  original and recognition dates, historical FX, period/reconciliation restrictions,
+  independent adoption and participant-scoped personal evidence.
+- Reports/dashboard read owning sources and posted GL, keep currencies separate,
+  disclose unallocated aging/cash activity and opening-only provenance, and export
+  bounded formula-safe CSV. Cash classification is append-only, with operating,
+  investing, financing, opening/cutover and unclassified amounts reconciling to GL.
+- Continue isolated browser testing on 8101 only. Keep exact checkpoints in
+  docs/phase-06-progress.md. No scheduler/infrastructure is installed implicitly.
+  Phase 7 requires owner review and approval after the Phase 6 acceptance report.

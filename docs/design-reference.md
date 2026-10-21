@@ -173,3 +173,27 @@ Read-only reference: `components/erp/Founder.tsx`, `Ownership.tsx` and their pag
 Founder has the prototype's eight sections; policy/planning/reserve/contribution/allocation sections share its compact tab convention. Ownership has six sections, dense cap tables and class-specific ownership bars. Real production evidence, quorum, participant consent, provisional-versus-formal identity, historical dates and blocked-recovery feedback extend those patterns without inventing operational data or legal registration.
 
 Phase 5 browser review covers all routes, light/dark, 264/64px sidebar, 56px header and a 390px mobile viewport. Captures wait for actual data before review. Source/value comparison and visual inspection preserve the approved visual identity; no universal pixel-diff certification is claimed. Prototype application source was not copied or modified.
+
+## Phase 6 operations and reporting
+
+The existing production shell, tokens and sharp components remain authoritative.
+Inventory overview follows the reference's conditional reorder banner, six adjacent
+110px KPI cells, compact cyan horizontal value chart, dense stock table and 18px
+panel spacing. Quantities retain their unit labels; unlike units are never added.
+Real permissions, source reconciliation and empty states replace prototype samples.
+No application source was copied from the reference.
+
+Operations use existing `Screen`, `FormDrawer`, tables, badges and chart primitives.
+Catalog pricing, receiving, control transfer, asset actions and historical entry
+retain the same field sizes, typography, borders and loading/error feedback.
+The product wordmark is distinct from the installation's company assets.
+
+`phase6.spec.ts` captures inventory in light, dark, compact and 820px off-canvas
+states, with optional read-only reference capture via `MATEERP_PROTOTYPE_URL`.
+The existing regression suite also covers 390px mobile and authentication/settings.
+Measured assertions retain 264px/64px sidebar, 56px header and #0A0F16 sidebar;
+cyan and both surface palettes use the established tokens. Visual QA also checks
+that fractional unit cost 92.857143 keeps its full currency-labelled value.
+Final capture results and operating differences are recorded in the Phase 6
+acceptance report; universal pixel identity across real and demonstration data is
+not asserted.

@@ -64,7 +64,7 @@ CATEGORIES: tuple[PolicyCategory, ...] = (
         "Purchase orders",
         "Purchase orders at or above the threshold.",
         6,
-        False,
+        True,
         True,
     ),
     PolicyCategory(
@@ -96,6 +96,13 @@ BY_KEY = {c.key: c for c in CATEGORIES}
 
 # action code -> policy category
 ACTIONS: dict[str, str] = {
+    "stock_count.post": "financial_adjustments",
+    "receipt_cost.post": "financial_adjustments",
+    "supplier_return.post": "financial_adjustments",
+    "asset.post": "financial_adjustments",
+    "budget.publish": "financial_adjustments",
+    "historical.review": "financial_adjustments",
+    "purchase_order.approve": "purchase_orders",
     "ownership.review": "ownership_changes",
     "founder.post": "financial_adjustments",
     "founder.policy": "admin_changes",

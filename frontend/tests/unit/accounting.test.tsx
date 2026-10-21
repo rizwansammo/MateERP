@@ -6,7 +6,7 @@ import { TransactionDrawer } from "@/features/accounting/Banking";
 import { JournalEditor } from "@/features/accounting/Journals";
 import { PeriodsPage } from "@/features/accounting/PeriodsTaxFx";
 import { StatementsPage } from "@/features/accounting/Reports";
-import { FinancialGate } from "@/features/accounting/shared";
+import { FinancialGate, useMoney } from "@/features/accounting/shared";
 import { amount, decimal, minor } from "@/features/accounting/money";
 import type { Account } from "@/features/accounting/types";
 import type { Bank } from "@/features/accounting/types";
@@ -70,6 +70,14 @@ describe("exact financial text", () => {
   });
   it("adds decimal strings exactly", () =>
     expect(decimal(minor("0.10") + minor("0.20"))).toBe("0.300000"));
+  it("preserves fractional unit costs and large quoted prices without losing digits", () => {
+    expect(amount("92.857143", "BDT")).toBe("BDT 92.857143");
+    expect(amount("9007199254740993.000001", "BDT")).toBe("BDT 9,007,199,254,740,993.000001");
+    expect(amount("-0.000001", "USD")).toBe("USD −0.000001");
+  });
+  it("retains the currency prefix even for an invalid display value", () => {
+    expect(amount("invalid", "BDT")).toBe("BDT invalid");
+  });
   it("supports zero-minor-unit currencies and lakh grouping", () => {
     expect(amount("12345.000000", "JPY")).toBe("JPY 12,345");
     expect(amount("1234567.89", "BDT", "south_asian")).toBe("BDT 12,34,567.89");
@@ -78,6 +86,14 @@ describe("exact financial text", () => {
     "rejects invalid or over-precise values %s",
     (value) => expect(() => minor(value, 2)).toThrow(),
   );
+});
+
+it("never trims leading digits from fractional costs in symbol presentation", async () => {
+  function UnitCost() { const money=useMoney(); return <span>{money('92.857143')}</span>; }
+  mockApi({...common,'/accounting/config/':{...config,currency_display:'symbol'},'/reference/currencies/':[{code:'BDT',symbol:'৳',minor_units:2}]});
+  renderWithAuth(<UnitCost />);
+  expect(await screen.findByText('৳92.857143')).toBeVisible();
+  expect(screen.queryByText('৳57143')).not.toBeInTheDocument();
 });
 
 it("restricts financial screens before fetching business data", () => {

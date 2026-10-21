@@ -255,3 +255,7 @@ class JournalSequence(models.Model):
 
     def __str__(self):
         return str(self.year)
+
+
+# Import after amount()/journal classes to avoid circular model construction.
+from .onboarding_models import HistoricalRecord, HistoricalTreatment  # noqa: E402, F401

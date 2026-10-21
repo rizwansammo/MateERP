@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Banner } from '@/components/ui/Banner';
 import { Segmented } from '@/components/ui/Choice';
@@ -31,7 +32,7 @@ function SharingDrawer({onClose}:{onClose:()=>void}) {
 }
 
 export function SharingPage() {
-  const {can}=useAuth(); const money=useMoney(); const parties=useParties(); const [tab,setTab]=useState('policies'); const [policy,setPolicy]=useState(false); const [allocate,setAllocate]=useState(false); const [error,setError]=useState<string|null>(null); const [busy,setBusy]=useState(false);
+  const {can}=useAuth(); const money=useMoney(); const parties=useParties(); const params=useSearchParams(); const requestedTab=params.get('tab'); const [tab,setTab]=useState(requestedTab&&['policies','monthly','forecast','reserves','contributions','allocations'].includes(requestedTab)?requestedTab:'policies'); const [policy,setPolicy]=useState(false); const [allocate,setAllocate]=useState(false); const [error,setError]=useState<string|null>(null); const [busy,setBusy]=useState(false);
   const tabs=[{value:'policies',label:'Policies'},{value:'monthly',label:'Monthly Planner'},{value:'forecast',label:'12-month Forecast'},{value:'reserves',label:'Annual Reserves'},{value:'contributions',label:'Contribution Progress'},{value:'allocations',label:'Settlement Allocations'}];
   return <Screen eyebrow="Founder Finance" title="Expense sharing & funding" description="Actual shared costs, future funding targets and company money are tracked separately. Historical policies and forecasts stay frozen." actions={<div className="flex gap-2">{can('founder.settlements.manage') && can('founder.personal.view') && <Button onClick={()=>setAllocate(true)}>Allocate shared expense</Button>}{can('founder.planning.manage') && <Button variant="primary" onClick={()=>setPolicy(true)}>New sharing policy</Button>}</div>}>
     <div className="overflow-x-auto"><Segmented label="Expense sharing section" value={tab} onChange={setTab} options={tabs}/></div>

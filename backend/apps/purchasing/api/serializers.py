@@ -169,6 +169,8 @@ class ExpenseSerializer(serializers.ModelSerializer):
             "vendor_name",
             "project_id",
             "expense_date",
+            "original_transaction_date",
+            "recognition_reason",
             "due_date",
             "description",
             "currency",
@@ -211,6 +213,8 @@ class ExpenseInput(serializers.Serializer):
     vendor_id = serializers.IntegerField(required=False, allow_null=True)
     project_id = serializers.IntegerField(required=False, allow_null=True)
     expense_date = serializers.DateField(required=False)
+    original_transaction_date = serializers.DateField(required=False, allow_null=True)
+    recognition_reason = serializers.CharField(max_length=1000, required=False, allow_blank=True)
     due_date = serializers.DateField(required=False, allow_null=True)
     description = serializers.CharField(max_length=300, required=False)
     currency = serializers.CharField(max_length=3, required=False)

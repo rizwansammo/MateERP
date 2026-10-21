@@ -83,6 +83,13 @@ describe('modules page', () => {
     await waitFor(() => expect(calls.find((c) => c.method === 'PUT')?.body).toEqual({ enabled: false }));
   });
 
+  it('shows implemented modules as functional from the server catalog', async () => {
+    mockApi({'/auth/me/':makeUser(),'/modules/':{...modules,optional:[{...modules.optional[0],implemented:true}]}});
+    renderWithAuth(<ModulesPage />);
+    expect(await screen.findByText('Functional')).toBeVisible();
+    expect(screen.queryByText('Planned · Phase 6')).not.toBeInTheDocument();
+  });
+
   it('is read-only without company.edit', async () => {
     mockApi({ '/auth/me/': viewerUser, '/modules/': modules });
     renderWithAuth(<ModulesPage />, viewerUser);

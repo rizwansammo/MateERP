@@ -128,6 +128,27 @@ describe('route protection in the UI', () => {
     expect(await screen.findByText(/is disabled/)).toBeInTheDocument();
   });
 
+  it('does not mount working controls for a disabled module', async () => {
+    mockApi({'/auth/me/':makeUser(),'/modules/':{optional:[{key:'inventory',enabled:false,implemented:true}],core:[]}});
+    renderWithAuth(<ModuleRoute itemId="inventory" group="Operations" subSlug="items"><p>Stock controls</p></ModuleRoute>);
+    expect(await screen.findByText(/is disabled/)).toBeVisible();
+    expect(screen.queryByText('Stock controls')).not.toBeInTheDocument();
+  });
+
+  it('renders working child screens when the optional module is enabled', async () => {
+    mockApi({'/auth/me/':makeUser(),'/modules/':{optional:[{key:'inventory',enabled:true,implemented:true}],core:[]}});
+    renderWithAuth(<ModuleRoute itemId="inventory" group="Operations" subSlug="items"><p>Stock controls</p></ModuleRoute>);
+    expect(await screen.findByText('Stock controls')).toBeVisible();
+    expect(screen.queryByTestId('planned-notice')).not.toBeInTheDocument();
+  });
+
+  it('keeps working controls unavailable if module configuration cannot be loaded', async () => {
+    mockApi({'/auth/me/':makeUser(),'/modules/':[503,{error:{code:'unavailable',message:'Try later',details:null,request_id:null}}]});
+    renderWithAuth(<ModuleRoute itemId="inventory" group="Operations" subSlug="items"><p>Stock controls</p></ModuleRoute>);
+    expect(await screen.findByText('Module settings unavailable')).toBeVisible();
+    expect(screen.queryByText('Stock controls')).not.toBeInTheDocument();
+  });
+
   it('planned modules stay honest when enabled', async () => {
     mockApi({ '/auth/me/': makeUser(), '/modules/': { optional: [], core: [] } });
     renderWithAuth(<ModuleRoute itemId="banking" group="Finance" subSlug="journals" />);

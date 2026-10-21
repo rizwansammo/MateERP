@@ -190,6 +190,10 @@ def save_bill(request, data, pk=None):
 
 
 def _bill_lines(bill, rows):
+    if bill.lines.filter(receipt_matches__isnull=False).exists():
+        raise BusinessRuleViolation(
+            "Remove receipt matches explicitly before replacing bill lines."
+        )
     if not rows:
         raise ValidationError({"lines": "Add at least one line."})
     accounts = [
@@ -320,7 +324,12 @@ def _post_bill(request, bill, actor):
         (line.account_id, line.tax_revision, line.taxable, line.tax)
         for line in bill.lines.select_related("tax_revision")
     ]
-    base_total, raw = _debits(rows, bill.currency, rate, base)
+    if bill.lines.filter(receipt_matches__isnull=False).exists():
+        from .procurement import matched_bill_debits
+
+        base_total, raw = matched_bill_debits(bill, rate, base)
+    else:
+        base_total, raw = _debits(rows, bill.currency, rate, base)
     raw.append(
         {
             "account_id": payable.pk,
@@ -409,6 +418,8 @@ def cancel_bill(request, pk):
 
 EXPENSE_FIELDS = (
     "expense_date",
+    "original_transaction_date",
+    "recognition_reason",
     "due_date",
     "description",
     "currency",
@@ -421,7 +432,7 @@ EXPENSE_FIELDS = (
 
 
 @transaction.atomic
-def save_expense(request, data, pk=None, *, schedule=None):
+def save_expense(request, data, pk=None, *, schedule=None, historical_treatment=None):
     require(request.user, "expenses.manage")
     lock_company()
     expense = (
@@ -432,6 +443,14 @@ def save_expense(request, data, pk=None, *, schedule=None):
     if pk:
         if expense is None:
             raise NotFound()
+        from apps.accounting.models import HistoricalTreatment
+
+        if HistoricalTreatment.objects.filter(expense=expense, status="approved").exists():
+            raise BusinessRuleViolation(
+                "This expense was prepared from independently reviewed historical "
+                "evidence. Reject it and retain a documented correction; its "
+                "approved financial identity cannot be edited."
+            )
         if hasattr(expense, "founder_funding"):
             raise BusinessRuleViolation(
                 "This expense is owned by Founder Finance. Reject and record a corrected "
@@ -450,6 +469,49 @@ def save_expense(request, data, pk=None, *, schedule=None):
     for field in EXPENSE_FIELDS:
         if field in data:
             setattr(expense, field, data[field])
+    from apps.accounting.models import HistoricalRecord
+
+    history = HistoricalRecord.objects.filter(
+        external_reference=(expense.reference or "").strip().upper()
+    ).first()
+    if history:
+        if history.treatments.filter(
+            mode="opening_only", status__in=("pending", "approved")
+        ).exists():
+            raise BusinessRuleViolation(
+                "This source is reserved for opening balances; it cannot post another expense."
+            )
+        if (
+            history.pre_registration
+            and not (
+                historical_treatment
+                and historical_treatment.record_id == history.pk
+                and historical_treatment.mode == "reconstructed"
+                and historical_treatment.status == "pending"
+            )
+            and (
+                not pk or not history.treatments.filter(expense=expense, status="approved").exists()
+            )
+        ):
+            raise BusinessRuleViolation(
+                "Pre-registration evidence requires independent corporate "
+                "adoption through historical onboarding."
+            )
+    if expense.original_transaction_date:
+        if expense.original_transaction_date > expense.expense_date:
+            raise ValidationError(
+                {"original_transaction_date": "Original date cannot follow recognition."}
+            )
+        if expense.original_transaction_date != expense.expense_date:
+            require(request.user, "onboarding.manage")
+            if not expense.recognition_reason.strip():
+                raise ValidationError(
+                    {
+                        "recognition_reason": (
+                            "Document the permitted recognition date and accounting basis."
+                        )
+                    }
+                )
     if "vendor_id" in data:
         expense.vendor = (
             Vendor.objects.filter(pk=data["vendor_id"]).first() if data["vendor_id"] else None
@@ -627,6 +689,7 @@ def _post_expense(request, expense, actor):
         source_id=expense.pk,
         source_action="post",
         posting_date=expense.expense_date,
+        journal_date=expense.original_transaction_date or expense.expense_date,
         description=f"Expense {number} — {expense.description}"[:500],
         lines=raw,
     )

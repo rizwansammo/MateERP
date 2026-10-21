@@ -169,7 +169,12 @@ test('documented formal issuance dilutes units without inventing cash or changin
   expect(register.formal[String(shareClass.id)]).toMatchObject({total:'12500',units:{[a]:'5000',[b]:'5000',[external]:'2500'}});
   const capital=await get<{classes:{id:number;paid_in:string;unpaid_commitments:string}[]}>(page,'/ownership/capital/');
   const record=capital.classes.find(c=>c.id===shareClass.id)!; expect(record.paid_in).toMatch(/^0(?:\.0+)?$/); expect(record.unpaid_commitments).toMatch(/^1300000(?:\.0+)?$/);
-  await page.goto('/ownership/capital'); await expect(page.getByText('12500',{exact:true})).toBeVisible();
+  // The screen loads its dated capital projection after navigation. Wait for
+  // that response rather than racing the existing loading state on busy hosts.
+  const capitalLoaded=page.waitForResponse(r=>r.url().includes('/api/v1/ownership/capital/')&&r.request().method()==='GET');
+  await page.goto('/ownership/capital');const capitalResponse=await capitalLoaded;
+  expect(capitalResponse.ok(),await capitalResponse.text()).toBe(true);
+  await expect(page.getByText('12500',{exact:true})).toBeVisible();
   await reviewerContext.close(); await governorContext.close();
 });
 

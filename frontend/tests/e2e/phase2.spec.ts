@@ -314,7 +314,8 @@ test('H — optional modules hide from navigation and stay honest', async ({ pag
   await page.getByRole('switch', { name: 'Inventory & Warehouse module' }).click();
   await expect(page.getByRole('link', { name: /inventory & warehouse/i })).toBeVisible();
   await page.goto('/inventory/items');
-  await expect(page.getByTestId('planned-notice')).toContainText('Phase 6');
+  await expect(page.getByRole('heading', { name: 'Items & Stock', exact: true })).toBeVisible();
+  await expect(page.getByTestId('planned-notice')).toBeHidden();
 
   await page.goto('/settings/modules');
   await expect(page.getByText('Mandatory').first()).toBeVisible();

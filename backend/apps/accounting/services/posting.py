@@ -484,6 +484,17 @@ def reverse(request, pk, on, reason, key, *, authority=None):
     original = JournalEntry.objects.filter(pk=pk, status="posted").first()
     if not original:
         raise NotFound()
+    from apps.assets.models import Asset
+
+    if Asset.objects.filter(source_line__journal=original, cancellation__isnull=True).exists():
+        raise BusinessRuleViolation(
+            "This acquisition has been capitalized. Use a documented asset "
+            "correction/disposal before reversing its financial source."
+        )
+    if Asset.objects.filter(source_line__journal=original, cancellation__date__gt=on).exists():
+        raise BusinessRuleViolation(
+            "The acquisition reversal cannot precede its retained capitalization reversals."
+        )
     if authority is None and is_domain_source(original.source_type):
         raise BusinessRuleViolation(
             "Reverse this entry through its owning workflow.", code="domain_owned"

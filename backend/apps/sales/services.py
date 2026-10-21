@@ -170,7 +170,14 @@ def save_project(request, data, pk=None):
         .objects.filter(project=obj, number__isnull=False)
         .exists()
     )
-    if (locked or issued_history) and (
+    recognized_history = bool(
+        pk
+        and django_apps.is_installed("apps.billing")
+        and django_apps.get_model("billing", "ControlTransfer")
+        .objects.filter(policy__snapshot__project_id=pk)
+        .exists()
+    )
+    if (locked or issued_history or recognized_history) and (
         before.get("currency") != obj.currency
         or before.get("contract_value") != obj.contract_value
         or old_customer != obj.customer_id

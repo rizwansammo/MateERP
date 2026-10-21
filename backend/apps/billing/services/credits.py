@@ -141,6 +141,9 @@ def request_credit_note(request, invoice_pk, data, key):
         raise NotFound()
     if invoice.status not in Invoice.ISSUED_STATES:
         raise BusinessRuleViolation("Only issued invoices can be credited.")
+    from apps.assets.services import guard_sale_invoice
+
+    guard_sale_invoice(invoice)
     if CreditNote.objects.filter(
         invoice=invoice, status=CreditNote.Status.AWAITING_APPROVAL
     ).exists():
@@ -214,6 +217,9 @@ def _issue_credit_note(request, note, actor):
     base = company.base_currency
     branding = common.published_branding()
     invoice = Invoice.objects.select_for_update().get(pk=note.invoice_id)
+    from apps.assets.services import guard_sale_invoice
+
+    guard_sale_invoice(invoice)
     if invoice.status not in Invoice.ISSUED_STATES:
         raise BusinessRuleViolation("The invoice can no longer be credited.")
     parts = [
@@ -255,6 +261,11 @@ def _issue_credit_note(request, note, actor):
         }
         for (account_id, rev), b in zip(keys, bases, strict=True)
     ]
+    from .recognition import credit_debits
+
+    controlled_debits = credit_debits(note, parts, base_total, rate, base)
+    if controlled_debits is not None:
+        raw = controlled_debits
     ar_base = ZERO
     if applied:
         ar_base = common.settlement_base(

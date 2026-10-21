@@ -16,7 +16,7 @@ def test_all_categories_listed_with_honest_enforcement(admin_client):
     assert enforced["admin_changes"] is True
     for phase4 in ("expenses", "invoices", "client_payments", "credits_refunds", "vendor_payments"):
         assert enforced[phase4] is True
-    assert enforced["purchase_orders"] is False  # stored now, enforced by Phase 6
+    assert enforced["purchase_orders"] is True  # Phase 6 now executes frozen order approval.
 
 
 def test_update_policy_is_audited(admin_client):

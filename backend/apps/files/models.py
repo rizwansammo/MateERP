@@ -5,6 +5,9 @@ from django.db import models
 
 
 class FilePurpose(models.TextChoices):
+    ASSET_EVIDENCE = "asset_evidence", "Fixed asset evidence"
+    HISTORICAL_EVIDENCE = "historical_evidence", "Historical financial evidence"
+    PROCUREMENT_EVIDENCE = "procurement_evidence", "Purchase and receiving evidence"
     FOUNDER_EVIDENCE = "founder_evidence", "Founder corporate evidence"
     PERSONAL_EVIDENCE = "personal_evidence", "Personal settlement evidence"
     OWNERSHIP_EVIDENCE = "ownership_evidence", "Ownership authorization evidence"

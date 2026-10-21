@@ -13,6 +13,18 @@ from apps.accounting.models import amount as money_field
 from apps.accounting.models import rate
 from apps.sales.models import percent, quantity
 
+# These classes remain in the purchasing app; split for readability only.
+from .procurement_models import (  # noqa: F401
+    GoodsReceipt,
+    ProcurementEvidence,
+    PurchaseOrder,
+    PurchaseOrderLine,
+    PurchaseOrderSnapshot,
+    ReceiptBillMatch,
+    ReceiptCostCorrection,
+    SupplierReturn,
+)
+
 USER = settings.AUTH_USER_MODEL
 DISCOUNT_TYPES = [("percent", "Percent"), ("fixed", "Fixed")]
 METHODS = [
@@ -207,6 +219,8 @@ class Expense(models.Model):
         "sales.Project", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
     )
     expense_date = models.DateField()
+    original_transaction_date = models.DateField(null=True, blank=True)
+    recognition_reason = models.CharField(max_length=1000, blank=True)
     due_date = models.DateField(null=True, blank=True)
     description = models.CharField(max_length=300)
     currency = models.CharField(max_length=3)

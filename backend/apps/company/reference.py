@@ -47,6 +47,7 @@ class ModuleDef:
     description: str
     phase: int
     nav_id: str
+    implemented: bool = False
 
 
 # Optional business modules. Core accounting, sales & billing, documents,
@@ -58,6 +59,7 @@ OPTIONAL_MODULES: tuple[ModuleDef, ...] = (
         "Founder contributions, expenses, settlements and loans.",
         5,
         "founder",
+        implemented=True,
     ),
     ModuleDef(
         "ownership",
@@ -65,6 +67,7 @@ OPTIONAL_MODULES: tuple[ModuleDef, ...] = (
         "Shareholders, capital records and transfers.",
         5,
         "ownership",
+        implemented=True,
     ),
     ModuleDef(
         "procurement",
@@ -72,6 +75,7 @@ OPTIONAL_MODULES: tuple[ModuleDef, ...] = (
         "Purchase orders, approval and receiving.",
         6,
         "purchases/orders",
+        implemented=True,
     ),
     ModuleDef(
         "inventory",
@@ -79,14 +83,23 @@ OPTIONAL_MODULES: tuple[ModuleDef, ...] = (
         "Items, stock movements and valuation.",
         6,
         "inventory",
+        implemented=True,
     ),
-    ModuleDef("assets", "Fixed Assets", "Asset register, depreciation and disposal.", 6, "assets"),
+    ModuleDef(
+        "assets",
+        "Fixed Assets",
+        "Asset register, depreciation and disposal.",
+        6,
+        "assets",
+        implemented=True,
+    ),
     ModuleDef(
         "budgeting",
         "Budgets & Cost Centers",
         "Budgets, cost centres and comparisons.",
         6,
         "budgets",
+        implemented=True,
     ),
 )
 MODULE_KEYS = frozenset(m.key for m in OPTIONAL_MODULES)

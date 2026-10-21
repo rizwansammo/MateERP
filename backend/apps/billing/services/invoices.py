@@ -469,8 +469,13 @@ def _snapshot(invoice, result, *, rate, base_total, base):
     )
 
 
-def _journal_lines(invoice, rate, source, base_total, receivable):
+def _journal_lines(invoice, rate, source, base_total, receivable, request):
     """Dr receivable / Cr revenue per account / Cr output tax per revision, exact in base."""
+    from .recognition import invoice_lines
+
+    controlled = invoice_lines(request, invoice, rate, source, base_total, receivable)
+    if controlled is not None:
+        return controlled
     credits = {}
     for line in invoice.lines.select_related("tax_revision"):
         if line.taxable:
@@ -587,7 +592,7 @@ def issue_invoice(request, pk):
         source_action="issue",
         posting_date=invoice.issue_date,
         description=f"Invoice {number} — {invoice.customer.name}"[:500],
-        lines=_journal_lines(invoice, rate, source, base_total, receivable),
+        lines=_journal_lines(invoice, rate, source, base_total, receivable, request),
     )
     invoice.number = number
     invoice.status = Invoice.Status.ISSUED
@@ -645,6 +650,12 @@ def void_invoice(request, pk, reason, on=None):
     authority = authorize(request.user, "invoice", "void")
     lock_company()
     invoice = locked(pk)
+    from .recognition import guard_void
+
+    guard_void(invoice)
+    from apps.assets.services import guard_sale_invoice
+
+    guard_sale_invoice(invoice)
     if not reason.strip():
         raise ValidationError({"reason": "Explain why the invoice is voided."})
     if invoice.status == Invoice.Status.VOID:

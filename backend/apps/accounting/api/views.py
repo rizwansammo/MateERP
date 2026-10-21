@@ -403,22 +403,30 @@ class TaxViewSet(FinanceViewSet):
 
 def export_csv(data, name):
     rows = data.get("results", data.get("rows", []))
+    if len(rows) > 10000 or data.get("count", 0) > 10000:
+        raise BusinessRuleViolation(
+            "Narrow the date range or filters; exports are limited to 10,000 rows.",
+            code="export_limit",
+        )
     buf = io.StringIO()
     writer = csv.writer(buf)
     keys = list(rows[0]) if rows else ["No posted activity"]
-    writer.writerow(keys)
-    for row in rows:
-        writer.writerow(
-            [
-                ("'" + str(row[k]))
-                if str(row[k]).startswith(("=", "+", "-", "@", "\t", "\r"))
-                else str(row[k])
-                for k in keys
-            ]
+
+    def cell(value):
+        text = str(value)
+        return (
+            "'" + text
+            if text.lstrip(" \t\r\n\ufeff").startswith(("=", "+", "-", "@"))
+            or text.startswith(("\t", "\r"))
+            else text
         )
+
+    writer.writerow([cell(key) for key in keys])
+    for row in rows:
+        writer.writerow([cell(row[k]) for k in keys])
     for key, value in data.items():
         if key not in ("rows", "results") and not isinstance(value, dict | list):
-            writer.writerow([key, str(value)])
+            writer.writerow([cell(key), cell(value)])
     response = HttpResponse(buf.getvalue(), content_type="text/csv; charset=utf-8")
     response["Content-Disposition"] = f'attachment; filename="{name}.csv"'
     response["Cache-Control"] = "private, no-store"
@@ -460,7 +468,7 @@ class LedgerView(FinanceView):
                 start,
                 end,
                 page=1,
-                page_size=10**9,
+                page_size=10001,
                 search=request.query_params.get("search", ""),
             )
             return export_csv(data, "ledger")

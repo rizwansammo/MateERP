@@ -2,7 +2,12 @@
 
 MateERP is NetaMate's enterprise resource planning application. It runs as a single-company installation covering finance, billing, purchasing, accounting, founder finance, operations and documents.
 
-**Status:** Phase 5 is implemented and verified locally: founder company finance, separate personal sharing/settlements, funding plans/reserves and documented ownership governance extend the existing accounting, billing and document systems. See the [Phase 5 report](docs/phase-05-summary.md). Purchase orders, inventory and other Phase 6 operations remain planned.
+**Status:** Phase 6 is implemented and locally verified: catalog/pricing,
+procurement/receiving/matching, weighted-average inventory, source-linked assets,
+approved budgets, historical onboarding and posted reporting/dashboard extend
+Phases 1–5. See the [approved Phase 6 plan](docs/phase-06-plan.md) and
+[acceptance report](docs/phase-06-summary.md) and
+[exact verification checkpoints](docs/phase-06-progress.md). Phase 7 is not started.
 
 | Layer | Technology |
 |---|---|
@@ -20,7 +25,7 @@ Copy-Item .env.example .env              # NEW installations only; preserve exis
 docker compose up -d --build             # PostgreSQL + Django API (migrations run automatically)
 docker compose exec backend python manage.py create_admin   # first administrator (interactive)
 cd frontend
-Copy-Item .env.example .env.local
+if (!(Test-Path .env.local)) { Copy-Item .env.example .env.local }
 npm ci
 npm run dev                              # http://localhost:3100 → sign in
 ```
@@ -59,3 +64,5 @@ scripts/         Windows-friendly helper scripts
 .github/         CI workflow
 compose.yaml     Local development stack
 ```
+
+- [Phase 6 summary](docs/phase-06-summary.md) · [Phase 6 plan](docs/phase-06-plan.md) · [Phase 6 checkpoints](docs/phase-06-progress.md)

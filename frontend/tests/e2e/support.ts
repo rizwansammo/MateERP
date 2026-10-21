@@ -3,6 +3,19 @@ import { randomBytes } from 'node:crypto';
 import path from 'node:path';
 
 import { type APIRequestContext, type BrowserContext, type Page, expect } from '@playwright/test';
+import type { Preferences } from '../../src/lib/api/types';
+
+/** Appearance is immediate; wait for the account write before reload/teardown. */
+export async function savedPreference(page: Page, action: () => Promise<void>) {
+  const saved = page.waitForResponse((response) =>
+    response.url().endsWith('/api/v1/auth/me/') && response.request().method() === 'PATCH',
+  );
+  await action();
+  const response = await saved;
+  expect(response.ok(), await response.text()).toBe(true);
+  const body: { preferences: Preferences } = await response.json();
+  return body;
+}
 
 /*
  * E2E harness helpers. They drive the isolated `mateerp` Docker stack only

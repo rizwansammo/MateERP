@@ -18,7 +18,7 @@ import { body, FormDrawer } from '@/features/commerce/forms';
 import { amountInWordsDecimal } from '@/features/documents/money';
 import { MonthlyChart, BreakdownChart } from '@/features/commerce/Charts';
 import { PlannedModule } from '@/features/system/PlannedModule';
-import { findNavItem } from '@/lib/navigation';
+import { CURRENT_PHASE, findNavItem } from '@/lib/navigation';
 
 import { makeUser, mockApi, renderWithAuth, viewerUser } from './helpers';
 
@@ -34,18 +34,19 @@ describe('posted financial charts', () => {
     for(const bar of bars) for(const attribute of ['x','y','width','height']) expect(Number.isFinite(Number(bar.getAttribute(attribute)))).toBe(true);
     expect(container.innerHTML).toContain('999,999,999,999,999,999.99');
   });
-  it('shows honest empty activity and the prototype aging counts', () => {
+  it('shows honest empty activity and the prototype aging counts', async () => {
     mockApi(common);
     renderWithAuth(<><MonthlyChart title="Empty activity" subtitle="Fiscal year" points={[{month:'2026-10',collected:'0'}]} series={[{key:'collected',label:'Collected'}]}/><BreakdownChart aging title="Aging" subtitle="Historical AR" rows={[{label:'Current',amount:'0',count:0},{label:'1–30 days',amount:'12.34',count:2}]} currency="BDT"/></>);
-    expect(screen.getByText('No posted activity in this fiscal year')).toBeInTheDocument(); expect(screen.getByText('2 invoices')).toBeInTheDocument();
+    expect(await screen.findByText('No posted activity in the selected period')).toBeInTheDocument(); expect(screen.getByText('2 invoices')).toBeInTheDocument();
   });
 });
 
-it('keeps purchase orders in Phase 6 without labeling working purchases sections as planned', () => {
-  mockApi(common); const item = findNavItem('purchases');
-  renderWithAuth(<PlannedModule item={item} group="Finance" current={item.subs!.find(s => s.slug === 'orders')!}/>);
-  expect(screen.getByTestId('planned-notice')).toHaveTextContent('Purchase Orders is scheduled for Phase 6');
-  expect(screen.queryByRole('cell', {name:'Expenses'})).not.toBeInTheDocument();
+it('activates Phase 6 purchase orders while leaving future integration settings planned', () => {
+  mockApi(common); const item = findNavItem('settings');
+  expect(CURRENT_PHASE).toBeGreaterThanOrEqual(findNavItem('purchases').subs!.find(s=>s.slug==='orders')!.phase!);
+  renderWithAuth(<PlannedModule item={item} group="Management" current={item.subs!.find(s => s.slug === 'integrations')!}/>);
+  expect(screen.getByTestId('planned-notice')).toHaveTextContent('Integration Settings is scheduled for Phase 7');
+  expect(screen.queryByRole('cell', {name:'Company Profile'})).not.toBeInTheDocument();
 });
 
 it('asks before discarding an edited sales order', async () => {

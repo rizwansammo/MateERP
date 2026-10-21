@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { Icon } from '@/components/ui/Icon';
 import { AmountInput, Input, Select } from '@/components/ui/Input';
+import { Button } from '@/components/ui/Button';
 import { api, errorMessage } from '@/lib/api/client';
 import type { Page } from '@/lib/api/types';
 import { useDebounced } from '@/lib/useDebounced';
@@ -89,6 +90,24 @@ export function postingAccounts(accounts: Account[] | undefined, kind: 'revenue'
   return (accounts ?? []).filter((a) => types.includes(a.account_type) && a.is_postable && a.is_active && !a.control);
 }
 
+/** Explicit quotation: never silently reprice an edited or historical document. */
+export function DatedPriceButton({itemId,date,currency,quantity,includesTax,purpose='sale',onApply}:{itemId:string;date:string;currency:string;quantity:string;includesTax:boolean;purpose?:'sale'|'purchase';onApply:(price:string)=>void}) {
+  const [busy,setBusy]=useState(false);const [error,setError]=useState<string|null>(null);
+  const signature=JSON.stringify({itemId,date,currency,quantity,includesTax,purpose});
+  const latest=useRef({signature,onApply});
+  useEffect(()=>{latest.current={signature,onApply};},[signature,onApply]);
+  const apply=async()=>{
+    if(busy)return;setBusy(true);setError(null);
+    try {
+      const quote=await api.post<{unit_price:string;includes_tax:boolean}>(`/catalog/items/${itemId}/quote/`,{date,currency,quantity,purpose});
+      if(latest.current.signature!==signature){setError('The line changed. Request its dated price again.');return;}
+      if(quote.includes_tax!==includesTax){setError(`This price ${quote.includes_tax?'includes':'excludes'} tax. Set the document tax mode accordingly before applying it.`);return;}
+      latest.current.onApply(quote.unit_price);
+    }catch(e){setError(errorMessage(e));}finally{setBusy(false);}
+  };
+  return <div className="mt-1 flex flex-col gap-1"><Button size="sm" disabled={busy||!date||!currency||!itemId} onClick={()=>void apply()}>{busy?'Quoting…':'Use dated price'}</Button>{error&&<span role="alert" className="text-[11px] text-err">{error}</span>}</div>;
+}
+
 /** Debounced server calculation: the browser never computes authoritative totals. */
 export function useCalculation(input: {
   currency: string;
@@ -140,6 +159,8 @@ export function LinesEditor({
   calc,
   accountKind,
   withItems = true,
+  date,
+  pricesIncludeTax = false,
 }: {
   lines: EditLine[];
   onChange: (lines: EditLine[]) => void;
@@ -147,6 +168,8 @@ export function LinesEditor({
   calc: Calculation | null;
   accountKind: 'revenue' | 'expense';
   withItems?: boolean;
+  date?: string;
+  pricesIncludeTax?: boolean;
 }) {
   const money = useMoney();
   const taxes = useTaxCodes();
@@ -205,6 +228,7 @@ export function LinesEditor({
                         </option>
                       ))}
                     </Select>
+                    {line.item_id&&date&&<DatedPriceButton itemId={line.item_id} date={date} currency={currency} quantity={line.quantity} includesTax={pricesIncludeTax} purpose={accountKind==='revenue'?'sale':'purchase'} onApply={price=>set(i,{unit_price:price})} />}
                   </td>
                 )}
                 <td className={cell}>

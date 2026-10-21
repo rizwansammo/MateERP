@@ -15,5 +15,7 @@ export default defineConfig({
     include: ['tests/unit/**/*.test.{ts,tsx}'],
     css: false,
     restoreMocks: true,
+    // Bound concurrent jsdom instances on the Windows development machine.
+    maxWorkers: 2,
   },
 });
