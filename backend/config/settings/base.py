@@ -156,7 +156,10 @@ REST_FRAMEWORK = {
     "ALLOWED_VERSIONS": ("v1",),
     # Session auth that enforces CSRF on every unsafe request, including
     # anonymous ones such as login.
-    "DEFAULT_AUTHENTICATION_CLASSES": ("apps.accounts.authentication.SessionAuthentication",),
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "apps.accounts.authentication.IntegrationAuthentication",
+        "apps.accounts.authentication.SessionAuthentication",
+    ),
     # Secure by default: every endpoint requires an active user who is not
     # pending a forced password change, unless it explicitly opts out.
     "DEFAULT_PERMISSION_CLASSES": ("apps.accounts.authorization.IsActiveUser",),
