@@ -38,6 +38,12 @@ def test_global_search_limits_input_and_enforces_financial_permissions(
 
 
 def test_dashboard_cash_on_hand_is_distinct_from_bank_position(books, admin_client):
+    # Bank/cash mapping requires an explicitly currency-restricted asset GL.
+    for code in ("1010", "1020"):
+        account = books.accounts[code]
+        account.currency = "BDT"
+        account.save(update_fields=["currency"])
+
     BankAccount.objects.create(
         name="Petty cash",
         kind="cash",
