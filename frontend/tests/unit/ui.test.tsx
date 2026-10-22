@@ -73,7 +73,7 @@ describe('Wordmark', () => {
     const mark = screen.getByRole('img', { name: 'MateERP' });
     const parts = Array.from(mark.children).map((el) => el.textContent);
     expect(parts).toEqual(['M', 'ATE', 'ERP']);
-    expect(mark.children[1]?.className).toContain('text-[.667em]');
+    expect(mark.children[1]?.className).toContain('text-[.82em]');
     expect(mark.children[2]?.className).toContain('text-brand');
   });
 });
