@@ -1,11 +1,12 @@
 """Permission-aware search and cash-on-hand dashboard invariants."""
+
 from datetime import date
 from decimal import Decimal
 
 import pytest
 
-from apps.banking.models import BankAccount
 from apps.accounting.services import posting
+from apps.banking.models import BankAccount
 from apps.sales.models import Customer
 
 pytestmark = pytest.mark.django_db

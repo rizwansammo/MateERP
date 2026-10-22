@@ -2,6 +2,15 @@
 @import './tokens.css';
 @import 'material-symbols/sharp.css';
 
+/* Local Fontsource faces preserve the product typography without depending
+   on an external font server at build or runtime. */
+:root {
+  --font-plex-sans: "IBM Plex Sans";
+  --font-plex-mono: "IBM Plex Mono";
+  --font-plex-serif: "IBM Plex Serif";
+  --font-signature: "Herr Von Muellerhoff";
+}
+
 /* Dark mode follows the data-theme attribute, not the OS preference. */
 @custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
 
