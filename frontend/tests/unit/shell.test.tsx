@@ -1,4 +1,6 @@
 import { screen, waitFor, within } from '@testing-library/react';
+
+import { AuthProvider } from '@/lib/auth/AuthProvider';
 import userEvent from '@testing-library/user-event';
 
 import { Header } from '@/components/shell/Header';
@@ -111,6 +113,64 @@ describe('sidebar', () => {
     expect(localStorage.getItem(SIDEBAR_STORAGE_KEY)).toBe('compact');
     await userEvent.click(screen.getByRole('button', { name: 'Expand sidebar' }));
     expect(html.dataset.sidebar).toBe('full');
+  });
+
+  it('keeps multiple modules open across route changes without jumping the sidebar', async () => {
+    mockApi(baseRoutes);
+    const onNavigate = vi.fn();
+    const sidebar = <Sidebar open={false} onNavigate={onNavigate} />;
+    const { rerender } = renderWithAuth(sidebar);
+
+    const navigation = screen.getByRole('navigation', { name: 'Main navigation' });
+    const sales = within(navigation).getByRole('link', { name: /sales & billing/i });
+    const purchases = within(navigation).getByRole('link', { name: /purchases & expenses/i });
+    const banking = within(navigation).getByRole('link', { name: /banking & accounting/i });
+
+    expect(sales).toHaveAttribute('aria-expanded', 'true');
+    expect(purchases).toHaveAttribute('aria-expanded', 'false');
+
+    await userEvent.click(purchases);
+    expect(sales).toHaveAttribute('aria-expanded', 'true');
+    expect(purchases).toHaveAttribute('aria-expanded', 'true');
+
+    navigation.scrollTop = 180;
+    nav.pathname = '/purchases/vendors';
+    rerender(<AuthProvider initialUser={makeUser()}>{sidebar}</AuthProvider>);
+    expect(screen.getByRole('navigation', { name: 'Main navigation' })).toBe(navigation);
+    expect(navigation.scrollTop).toBe(180);
+    expect(sales).toHaveAttribute('aria-expanded', 'true');
+    expect(purchases).toHaveAttribute('aria-expanded', 'true');
+    expect(within(navigation).getByRole('link', { name: 'Vendors & Suppliers' })).toHaveAttribute('aria-current', 'page');
+
+    // Any expanded section can be collapsed without navigating away or closing the others.
+    const navigationCount = onNavigate.mock.calls.length;
+    await userEvent.click(sales);
+    expect(sales).toHaveAttribute('aria-expanded', 'false');
+    expect(purchases).toHaveAttribute('aria-expanded', 'true');
+    expect(onNavigate).toHaveBeenCalledTimes(navigationCount);
+
+    // Explicitly closed sections stay closed when revisiting them.
+    nav.pathname = '/sales/invoices';
+    rerender(<AuthProvider initialUser={makeUser()}>{sidebar}</AuthProvider>);
+    expect(sales).toHaveAttribute('aria-expanded', 'false');
+    expect(purchases).toHaveAttribute('aria-expanded', 'true');
+
+    // A newly visited module opens without collapsing the other expanded modules.
+    nav.pathname = '/banking/accounts';
+    rerender(<AuthProvider initialUser={makeUser()}>{sidebar}</AuthProvider>);
+    await waitFor(() => expect(banking).toHaveAttribute('aria-expanded', 'true'));
+    expect(purchases).toHaveAttribute('aria-expanded', 'true');
+    expect(sales).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('uses the slightly larger sidebar wordmark and balanced ATE lettering', () => {
+    mockApi(baseRoutes);
+    renderWithAuth(<Sidebar open={false} onNavigate={() => {}} />);
+    const home = screen.getByRole('link', { name: 'MateERP home' });
+    const mark = within(home).getAllByRole('img', { name: 'MateERP' })[0];
+    expect(mark.parentElement?.className).toContain('text-[26px]');
+    expect(mark.children[1]?.className).toContain('text-[.82em]');
+    expect(mark.children[2]?.className).toContain('text-brand');
   });
 
   it('marks the active module and section', () => {

@@ -2,8 +2,8 @@ import { cn } from '@/lib/cn';
 
 /*
  * The MateERP software wordmark (not the customer company's logo).
- * Proportions from the approved reference: large "M", smaller "ATE" at
- * 0.667em, large cyan "ERP", all in the supplied Optimus display face. Size it with the
+ * Proportions from the approved reference: large "M", slightly smaller "ATE" at
+ * 0.82em, large cyan "ERP", all in the supplied Optimus display face. Size it with the
  * parent's font-size.
  */
 export function Wordmark({ className }: { className?: string }) {
@@ -19,7 +19,7 @@ export function Wordmark({ className }: { className?: string }) {
       <span aria-hidden="true" className="text-[1em]">
         M
       </span>
-      <span aria-hidden="true" className="ml-[.07em] text-[.667em] tracking-[.035em]">
+      <span aria-hidden="true" className="ml-[.07em] text-[.82em] tracking-[.025em]">
         ATE
       </span>
       <span aria-hidden="true" className="ml-[.035em] text-[1em] tracking-[.02em] text-brand">

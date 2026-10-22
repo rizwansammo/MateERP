@@ -2,13 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { CompactMark, Wordmark } from '@/components/brand/Wordmark';
 import { Icon } from '@/components/ui/Icon';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { cn } from '@/lib/cn';
 import { useSidebarMode } from '@/lib/preferences';
+import { resolveRoute } from '@/lib/navigation';
 
 import { CompanyCard } from './CompanyCard';
 import { SidebarNav } from './SidebarNav';
@@ -43,7 +44,7 @@ export function Sidebar({ open, onNavigate }: SidebarProps) {
         aria-label="MateERP home"
         className="flex h-[60px] flex-none items-center border-b border-sb-bd px-[18px] hover:no-underline compact:justify-center"
       >
-        <span className="flex items-center text-[23px] text-splash-fg compact:hidden">
+        <span className="flex items-center text-[26px] text-splash-fg compact:hidden">
           <Wordmark />
         </span>
         <span className="hidden compact:flex">
@@ -53,7 +54,7 @@ export function Sidebar({ open, onNavigate }: SidebarProps) {
 
       <CompanyCard />
 
-      <SidebarNavState key={pathname} pathname={pathname} onNavigate={onNavigate} />
+      <SidebarNavState pathname={pathname} onNavigate={onNavigate} />
 
       <div className="flex flex-none items-center justify-between gap-2 border-t border-sb-bd px-3 py-2.5 compact:justify-center">
         <div className="flex min-w-0 flex-col compact:hidden">
@@ -80,11 +81,23 @@ export function Sidebar({ open, onNavigate }: SidebarProps) {
 }
 
 /**
- * Keyed by pathname so manually opened/closed groups reset to "active group
- * open" after each navigation, matching the prototype.
+ * Remember each module's independent open/closed state across navigation.
+ * Open the visited module once, unless the user explicitly closed it.
+ * Keeping this component mounted also preserves the sidebar's scroll position.
  */
 function SidebarNavState({ pathname, onNavigate }: { pathname: string; onNavigate: () => void }) {
-  const [overrides, setOverrides] = useState<Record<string, boolean>>({});
+  const activeId = resolveRoute(pathname)?.item.id;
+  const [overrides, setOverrides] = useState<Record<string, boolean>>(
+    () => (activeId ? { [activeId]: true } : {}),
+  );
+
+  useEffect(() => {
+    if (!activeId) return;
+    setOverrides((previous) =>
+      previous[activeId] === undefined ? { ...previous, [activeId]: true } : previous,
+    );
+  }, [activeId]);
+
   return (
     <SidebarNav
       pathname={pathname}

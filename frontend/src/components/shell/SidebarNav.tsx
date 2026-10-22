@@ -60,10 +60,10 @@ export function SidebarNav({ pathname, openOverrides, onToggle, onNavigate }: Si
 
             const onItemClick = (event: MouseEvent<HTMLAnchorElement>) => {
               if (hasSubs && !compactInEffect(mode)) {
-                if (active) {
-                  // Clicking the active module only folds/unfolds its sub-menu.
+                if (isOpen) {
+                  // An already-open section only closes when its own header is clicked.
                   event.preventDefault();
-                  onToggle(item.id, !isOpen);
+                  onToggle(item.id, false);
                   return;
                 }
                 onToggle(item.id, true);
