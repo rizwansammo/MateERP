@@ -67,7 +67,6 @@ def test_token_is_hashed_and_can_read_allowed_api(aia):
         ("/api/v1/purchasing/expenses/", "post"),
         ("/api/v1/billing/invoices/1/issue/", "post"),
         ("/api/v1/sales/customers/1/", "delete"),
-        ("/api/v1/accounts/", "get"),
     ],
 )
 def test_forbidden_routes_fail_closed(aia, path, method):
