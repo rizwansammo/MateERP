@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import { CompactMark, Wordmark } from '@/components/brand/Wordmark';
 import { Icon } from '@/components/ui/Icon';
@@ -87,22 +87,31 @@ export function Sidebar({ open, onNavigate }: SidebarProps) {
  */
 function SidebarNavState({ pathname, onNavigate }: { pathname: string; onNavigate: () => void }) {
   const activeId = resolveRoute(pathname)?.item.id;
-  const [overrides, setOverrides] = useState<Record<string, boolean>>(
-    () => (activeId ? { [activeId]: true } : {}),
-  );
+  const [state, setState] = useState(() => ({
+    activeId,
+    expanded: activeId ? { [activeId]: true } as Record<string, boolean> : {} as Record<string, boolean>,
+  }));
 
-  useEffect(() => {
-    if (!activeId) return;
-    setOverrides((previous) =>
-      previous[activeId] === undefined ? { ...previous, [activeId]: true } : previous,
-    );
-  }, [activeId]);
+  // When navigation changes the active module, remember that module as open.
+  // React processes this guarded render-time adjustment before painting, so
+  // there is no first-frame collapse and no state update inside an effect.
+  if (state.activeId !== activeId) {
+    setState((previous) => ({
+      activeId,
+      expanded: activeId && previous.expanded[activeId] === undefined
+        ? { ...previous.expanded, [activeId]: true }
+        : previous.expanded,
+    }));
+  }
 
   return (
     <SidebarNav
       pathname={pathname}
-      openOverrides={overrides}
-      onToggle={(id, next) => setOverrides((prev) => ({ ...prev, [id]: next }))}
+      openOverrides={state.expanded}
+      onToggle={(id, next) => setState((previous) => ({
+        ...previous,
+        expanded: { ...previous.expanded, [id]: next },
+      }))}
       onNavigate={onNavigate}
     />
   );
