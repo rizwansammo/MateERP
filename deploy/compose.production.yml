@@ -1,0 +1,101 @@
+# Independent single-company MateERP deployment. Never use development compose.yaml.
+name: mateerp
+services:
+  database:
+    image: postgres:18.6-alpine
+    restart: unless-stopped
+    init: true
+    environment:
+      POSTGRES_DB: ${MATEERP_DB_NAME:-mateerp}
+      POSTGRES_USER: ${MATEERP_DB_USER:-mateerp}
+      POSTGRES_PASSWORD: ${MATEERP_DB_PASSWORD:?Supply MATEERP_DB_PASSWORD}
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+    volumes:
+      - pgdata:/var/lib/postgresql
+    networks: [internal]
+    security_opt: [no-new-privileges:true]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    mem_limit: 768m
+    pids_limit: 160
+    logging: &log_rotation
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '4'
+
+  backend:
+    image: ghcr.io/rizwansammo/mateerp-backend:${MATEERP_IMAGE_TAG:?Supply MATEERP_IMAGE_TAG}
+    restart: unless-stopped
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp:rw,nosuid,noexec,size=96m
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.prod
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?Supply DJANGO_SECRET_KEY}
+      DATABASE_URL: postgres://${MATEERP_DB_USER:-mateerp}:${MATEERP_DB_PASSWORD:?Supply MATEERP_DB_PASSWORD}@database:5432/${MATEERP_DB_NAME:-mateerp}
+      DJANGO_ALLOWED_HOSTS: erp.netamate.com,backend,127.0.0.1
+      DJANGO_CSRF_TRUSTED_ORIGINS: https://erp.netamate.com
+      DJANGO_TIME_ZONE: Asia/Dhaka
+      DJANGO_SECURE_SSL_REDIRECT: 'false'
+      DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS: 'false'
+      MATEERP_TRUSTED_PROXIES: ''
+      PRIVATE_STORAGE_ROOT: /data/storage
+      PYTHONDONTWRITEBYTECODE: '1'
+    command: [gunicorn, config.wsgi:application, --bind, 0.0.0.0:8000, --workers, '2', --threads, '2', --timeout, '90', --access-logfile, '-']
+    volumes:
+      - documents:/data/storage
+    networks: [internal]
+    depends_on:
+      database: {condition: service_healthy}
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; req=urllib.request.Request('http://127.0.0.1:8000/api/v1/health/',headers={'X-Forwarded-Proto':'https','Host':'backend'}); assert urllib.request.urlopen(req, timeout=5).status == 200"]
+      interval: 20s
+      timeout: 8s
+      retries: 5
+      start_period: 60s
+    mem_limit: 1024m
+    pids_limit: 220
+    logging: *log_rotation
+
+  frontend:
+    image: ghcr.io/rizwansammo/mateerp-frontend:${MATEERP_IMAGE_TAG:?Supply MATEERP_IMAGE_TAG}
+    restart: unless-stopped
+    init: true
+    environment:
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: '1'
+      MATEERP_BACKEND_URL: http://backend:8000
+      HOSTNAME: 0.0.0.0
+      PORT: '3000'
+    ports:
+      - '127.0.0.1:3035:3000'
+    networks: [internal, edge]
+    depends_on:
+      backend: {condition: service_healthy}
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:3000/login').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 20s
+      timeout: 8s
+      retries: 5
+      start_period: 60s
+    mem_limit: 768m
+    pids_limit: 200
+    logging: *log_rotation
+
+networks:
+  internal: {internal: true}
+  edge: {driver: bridge}
+
+volumes:
+  pgdata: {}
+  documents: {}

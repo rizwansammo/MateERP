@@ -24,3 +24,14 @@ def test_error_envelope_carries_the_response_request_id(api_client):
     response = api_client.get("/api/v1/nope/")
 
     assert response.json()["error"]["request_id"] == response["X-Request-ID"]
+
+
+def test_private_api_errors_disallow_caching(api_client):
+    response = api_client.get("/api/v1/nope/")
+    assert response["Cache-Control"] == "private, no-store"
+
+
+def test_explicit_cache_control_is_preserved(api_client, monkeypatch):
+    _ok(monkeypatch)
+    response = api_client.get("/api/v1/health/")
+    assert response["Cache-Control"] == "no-store"

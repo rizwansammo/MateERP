@@ -1,0 +1,11 @@
+[Unit]
+Description=MateERP daily encrypted backup (inactive until launch approval)
+
+[Timer]
+OnCalendar=*-*-* 02:15:00 Asia/Dhaka
+Persistent=true
+RandomizedDelaySec=300
+Unit=mateerp-backup.service
+
+[Install]
+WantedBy=timers.target

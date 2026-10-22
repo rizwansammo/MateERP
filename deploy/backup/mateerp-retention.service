@@ -1,0 +1,16 @@
+[Unit]
+Description=MateERP encrypted repository retention and integrity maintenance
+ConditionPathExists=/etc/mateerp/backup-enabled
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+UMask=0077
+ExecStart=/usr/local/sbin/mateerp-retention
+TimeoutStartSec=7200
+Nice=15
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7

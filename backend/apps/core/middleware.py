@@ -41,6 +41,11 @@ class RequestIdMiddleware:
         started = time.perf_counter()
         try:
             response = self.get_response(request)
+            # Financial API responses should not be cached by browsers or
+            # intermediary proxies unless a view makes a deliberate, safe
+            # exception (e.g. versioned public company artwork).
+            if request.path.startswith("/api/"):
+                response.setdefault("Cache-Control", "private, no-store")
             response[REQUEST_ID_HEADER] = request_id
             logger.info(
                 "%s %s %s",

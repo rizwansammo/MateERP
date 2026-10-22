@@ -1,0 +1,11 @@
+[Unit]
+Description=MateERP weekly retention (inactive until launch approval)
+
+[Timer]
+OnCalendar=Sun *-*-* 04:15:00 Asia/Dhaka
+Persistent=true
+RandomizedDelaySec=900
+Unit=mateerp-retention.service
+
+[Install]
+WantedBy=timers.target

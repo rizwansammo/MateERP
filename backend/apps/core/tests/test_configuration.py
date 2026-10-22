@@ -77,3 +77,9 @@ def test_production_settings_refuse_missing_allowed_hosts():
     result = _run_prod_check({"DJANGO_SECRET_KEY": STRONG_KEY})
     assert result.returncode != 0
     assert "DJANGO_ALLOWED_HOSTS" in result.stderr
+
+
+def test_production_settings_refuse_wildcard_host():
+    result = _run_prod_check({"DJANGO_SECRET_KEY": STRONG_KEY, "DJANGO_ALLOWED_HOSTS": "*"})
+    assert result.returncode != 0
+    assert "must not contain" in result.stderr

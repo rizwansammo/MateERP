@@ -1,0 +1,48 @@
+# Phase 7D: disposable, resource-limited test infrastructure ONLY.
+# NEVER use production secrets, storage, Docker network or Compose project.
+name: mateerp7d
+services:
+  database:
+    image: postgres:18.6-alpine
+    environment:
+      POSTGRES_DB: mateerp_e2e_phase7d
+      POSTGRES_USER: mateerp7d
+      POSTGRES_PASSWORD: isolated-benchmark-only
+    tmpfs:
+      - /var/lib/postgresql:rw,size=512m
+    networks: [isolated]
+    mem_limit: 576m
+    cpus: '0.5'
+    pids_limit: 160
+    security_opt: [no-new-privileges:true]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  backend-e2e:
+    image: mateerp7d-backend-test:20261022
+    command: [python, manage.py, runserver, 0.0.0.0:8000, --noreload]
+    working_dir: /app
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.e2e
+      DJANGO_SECRET_KEY: phase7d-isolated-not-production-key
+      DATABASE_URL: postgres://mateerp7d:isolated-benchmark-only@database:5432/mateerp_e2e_phase7d
+      PRIVATE_STORAGE_ROOT: /tmp/mateerp7d-private
+      PYTHONDONTWRITEBYTECODE: '1'
+    volumes:
+      - ../../backend:/app:ro
+    tmpfs:
+      - /tmp:rw,size=192m
+    ports:
+      - '127.0.0.1:8101:8000'
+    networks: [isolated]
+    depends_on:
+      database: {condition: service_healthy}
+    mem_limit: 960m
+    cpus: '1.0'
+    pids_limit: 220
+    security_opt: [no-new-privileges:true]
+networks:
+  isolated:
+    driver: bridge

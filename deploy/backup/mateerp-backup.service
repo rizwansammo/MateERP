@@ -1,0 +1,20 @@
+[Unit]
+Description=MateERP encrypted DB/document snapshot and independent offsite copy
+Documentation=file:/opt/MateERP/docs/phase-07c-disaster-recovery.md
+ConditionPathExists=/etc/mateerp/backup-enabled
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+UMask=0077
+ExecStart=/usr/local/sbin/mateerp-backup
+ExecStartPost=/usr/local/sbin/mateerp-offsite-copy
+TimeoutStartSec=7200
+Nice=15
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+NoNewPrivileges=yes
+PrivateTmp=yes
