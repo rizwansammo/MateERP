@@ -10,7 +10,7 @@ For private repos with insufficient GitHub-hosted minutes: use an independent, t
 
 If `MATEERP_CI_RUNNER_LABELS` is missing, the default is `["ubuntu-latest"]` (GitHub-hosted). **Changing a repository to private does not automatically remove GitHub-hosted billing/minute limits**; users must switch the variable to a real online self-hosted runner before private builds can proceed without consuming hosted minutes.
 
-GHCR packages can be private; ensure `rizwansammo/MateERP` has write access to both container packages under GHCR, and grant the production deployment machine a **read:packages-only** token or other approved package credentials for private pulls. Do not put PATs in git. Image names are `ghcr.io/rizwansammo/mateerp-frontend` and `ghcr.io/rizwansammo/mateerp-backend`, tagged `sha-<full commit>`. All worker labels, secrets and environment protections must be configured by a GitHub repository administrator.
+GHCR packages can be private; ensure `rizwansammo/MateERP` has write access to both container packages under GHCR, and grant the repository Actions workflow access to those packages. The restricted production SSH deployment passes its **short-lived GITHUB_TOKEN** over SSH stdin to a temporary root-owned Docker credential directory. No permanent GHCR PAT is needed on MateServer. Do not put PATs in git. Image names are `ghcr.io/rizwansammo/mateerp-frontend` and `ghcr.io/rizwansammo/mateerp-backend`, tagged `sha-<full commit>`. All worker labels, secrets and environment protections must be configured by a GitHub repository administrator.
 
 ## Staging limitations and go-live boundary
 

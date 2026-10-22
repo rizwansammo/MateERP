@@ -20,7 +20,7 @@ services:
     image: ghcr.io/rizwansammo/mateerp-backend:${MATEERP_IMAGE_TAG:?required}
     restart: "no"
     read_only: true
-    tmpfs: [/tmp:rw,nosuid,size=96m]
+    tmpfs: [/tmp]
     environment:
       DJANGO_SETTINGS_MODULE: config.settings.prod
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?required}
@@ -80,7 +80,8 @@ services:
     networks: [ingress]
     depends_on:
       frontend: {condition: service_healthy}
-    cap_drop: [ALL]
+    # nginx root master needs CHOWN/SETUID while creating its isolated
+    # ephemeral writable cache; host mappings stay loopback-only.
     mem_limit: 96m
     cpus: '0.2'
     pids_limit: 64

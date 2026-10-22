@@ -181,6 +181,7 @@ jobs:
     timeout-minutes: 20
     permissions:
       contents: read
+      packages: read
     environment: production
     concurrency:
       group: mateerp-production
@@ -217,7 +218,7 @@ jobs:
           printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/mateerp_deploy_key"
           printf '%s\n' "$SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
           chmod 600 "$HOME/.ssh/mateerp_deploy_key" "$HOME/.ssh/known_hosts"
-          ssh -F /dev/null -T -i "$HOME/.ssh/mateerp_deploy_key" \
+          printf '%s\n' "$GITHUB_TOKEN" | ssh -F /dev/null -T -i "$HOME/.ssh/mateerp_deploy_key" \
             -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes \
             -o UserKnownHostsFile="$HOME/.ssh/known_hosts" -p "$SSH_PORT" \
-            "$SSH_USER@$SSH_HOST" "deploy sha-$TARGET_SHA"
+            "$SSH_USER@$SSH_HOST" "deploy sha-$TARGET_SHA $GITHUB_ACTOR"

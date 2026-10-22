@@ -34,7 +34,7 @@ services:
     init: true
     read_only: true
     tmpfs:
-      - /tmp:rw,nosuid,noexec,size=96m
+      - /tmp
     environment:
       DJANGO_SETTINGS_MODULE: config.settings.prod
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?Supply DJANGO_SECRET_KEY}

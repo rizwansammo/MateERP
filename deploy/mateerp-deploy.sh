@@ -3,10 +3,19 @@
 # Stays inert unless TWO independent production authorisation gates are set.
 set -Eeuo pipefail
 [[ "$#" == 0 ]] || exit 15
-IFS=' ' read -r action tag extra || exit 16
-[[ "$action" == deploy && -z "${extra:-}" && "$tag" =~ ^sha-[0-9a-f]{40}$ ]] || exit 17
+IFS=' ' read -r action tag actor extra || exit 16
+[[ "$action" == deploy && -z "${extra:-}" && "$tag" =~ ^sha-[0-9a-f]{40}$ && "$actor" =~ ^[a-zA-Z0-9-]{1,39}$ ]] || exit 17
 [[ "$(id -u)" -eq 0 && -f /etc/mateerp/auto-deploy-enabled ]] || exit 18
+# Short-lived GITHUB_TOKEN arrives only on stdin via restricted SSH.
+# No long-lived GHCR PAT is stored on the production server.
+IFS= read -r ghcr_token || exit 26
+[[ "${#ghcr_token}" -ge 24 && "${#ghcr_token}" -le 500 ]] || exit 26
 umask 077
+DOCKER_CONFIG="$(mktemp -d /run/mateerp-ghcr.XXXXXXXX)"
+export DOCKER_CONFIG
+trap 'rm -rf -- "$DOCKER_CONFIG"' EXIT
+printf '%s\n' "$ghcr_token" | docker login ghcr.io -u "$actor" --password-stdin >/dev/null 2>&1
+unset ghcr_token
 exec 9>/run/lock/mateerp-deploy.lock
 flock -n 9 || { echo 'Another release is active' >&2; exit 19; }
 cd /opt/MateERP
