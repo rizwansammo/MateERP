@@ -14,6 +14,7 @@ from apps.accounting.money import ZERO, decimal, strings
 from apps.accounts.authorization import get_permission_codes
 from apps.assets.models import Asset, DepreciationCharge
 from apps.billing.models import Invoice
+from apps.banking.models import BankAccount
 from apps.budgeting.models import Budget
 from apps.budgeting.services import comparison
 from apps.company.models import CompanyProfile
@@ -104,7 +105,23 @@ def summary(user, start, end):
         date(1, 1, 1), start - timedelta(days=min(days, (start - date(1, 1, 1)).days))
     )
     prior = reports.report("pnl", prior_start, prior_end) if prior_end >= prior_start else None
-    metrics = []
+    # Cash-on-hand is NOT the bank + cash aggregate. Include every registered
+    # cash account (even if subsequently deactivated) for historical accuracy.
+    cash_account_ids = BankAccount.objects.filter(kind="cash").values_list("gl_account_id", flat=True)
+    cash_posted = JournalLine.objects.filter(
+        journal__status="posted",
+        journal__posting_date__lte=end,
+        account_id__in=cash_account_ids,
+    ).aggregate(debits=Sum("base_debit"), credits=Sum("base_credit"))
+    cash_on_hand = (cash_posted["debits"] or ZERO) - (cash_posted["credits"] or ZERO)
+    metrics = [{
+        "key": "cash_on_hand",
+        "label": "Current cash balance",
+        "value": cash_on_hand,
+        "kind": "money",
+        "route": "/banking/accounts",
+        "sub": f"Cash on hand · at {end} · excludes bank accounts",
+    }]
     for key, label, route in [
         ("revenue", "Revenue (accrual)", "/banking/statements/pnl"),
         ("expenses", "Total expenses", "/reports/expense"),

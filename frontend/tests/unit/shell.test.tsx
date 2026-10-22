@@ -39,13 +39,17 @@ describe('theme switching', () => {
     );
   });
 
-  it('keeps search and quick-create disabled until their modules exist', () => {
+  it('opens real search and quick-create controls', async () => {
     mockApi(baseRoutes);
     renderWithAuth(<Header onOpenNavigation={() => {}} />);
-    expect(screen.getByRole('button', { name: /search/i })).toBeDisabled();
-    expect(screen.getByRole('button', { name: /^new/i })).toBeDisabled();
+    await userEvent.click(screen.getByRole('button', { name: 'Search records and pages' }));
+    expect(screen.getByRole('dialog', { name: 'Search MateERP' })).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'Search pages and records' })).toHaveFocus();
+    await userEvent.click(screen.getByRole('button', { name: 'Close search' }));
+    expect(screen.queryByRole('dialog', { name: 'Search MateERP' })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Create new record' }));
+    expect(screen.getByRole('menu', { name: 'Create new record' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /notifications/i })).toBeEnabled();
-    expect(screen.getByRole('button', { name: 'Account menu' })).toBeEnabled();
   });
 });
 

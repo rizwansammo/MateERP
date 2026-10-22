@@ -3,7 +3,7 @@ import { cn } from '@/lib/cn';
 /*
  * The MateERP software wordmark (not the customer company's logo).
  * Proportions from the approved reference: large "M", smaller "ATE" at
- * 0.667em, large cyan "ERP", all in the Astro display face. Size it with the
+ * 0.667em, large cyan "ERP", all in the supplied Optimus display face. Size it with the
  * parent's font-size.
  */
 export function Wordmark({ className }: { className?: string }) {

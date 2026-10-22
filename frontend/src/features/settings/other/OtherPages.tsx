@@ -92,22 +92,33 @@ export function AboutPage() {
         <div className="text-[11px] uppercase tracking-[.38em] text-sb-tx2">Enterprise Resource Planning</div>
       </div>
       <InfoPanels>
-        <InfoPanel title="Product" rows={[
-          { label: 'Product', value: 'MateERP' },
-          { label: 'Version', value: h ? `${h.version} · ${h.environment}` : '—' },
-          { label: 'Ecosystem', value: 'NetaMate (MateCRM, MateHR — separate products)' },
-          { label: 'Licensed to', value: company.data?.display_name ?? 'Company not configured' },
-          { label: 'Model', value: 'Single company per installation' },
+        <InfoPanel title="Product identity" rows={[
+          { label: 'Application', value: 'MateERP' },
+          { label: 'Publisher', value: 'NetaMate' },
+          { label: 'Release', value: h?.version ?? '—' },
+          { label: 'Deployment', value: 'Dedicated company installation' },
+          { label: 'Licensed organization', value: company.data?.display_name ?? 'Company profile not configured' },
         ]} />
-        <InfoPanel title="Delivered" rows={[
-          { label: 'Phase 1', value: PHASES[1]! },
-          { label: 'Phase 2', value: PHASES[2]! },
-          { label: 'Phase 3', value: PHASES[3]! },
-          { label: 'Phase 4', value: PHASES[4]! },
-          { label: 'Phase 5', value: PHASES[5]! },
+        <InfoPanel title="Service information" rows={[
+          { label: 'Environment', value: h?.environment === 'production' ? 'Production' : h?.environment ?? 'Unavailable' },
+          { label: 'Application health', value: h?.status === 'ok' ? 'Operational' : 'Status unavailable' },
+          { label: 'Database connectivity', value: h?.checks.database.status === 'ok' ? 'Connected' : 'Unavailable' },
+          { label: 'Data ownership', value: 'Dedicated organization workspace' },
+          { label: 'Access control', value: 'Role-based permissions' },
         ]} />
-        <InfoPanel title="Roadmap" rows={[6, 7].map((p) => ({ label: `Phase ${p}`, value: PHASES[p]!, tone: 'muted' as const }))} />
+        <InfoPanel title="Platform capabilities" rows={[
+          { label: 'Financial management', value: 'Accounting, invoicing and reporting' },
+          { label: 'Business operations', value: 'Purchasing, inventory and assets' },
+          { label: 'Governance', value: 'Approvals and audit history' },
+          { label: 'Founder management', value: 'Contributions, settlements and ownership' },
+          { label: 'NetaMate ecosystem', value: 'MateCRM · MateHR (separate applications)' },
+        ]} />
       </InfoPanels>
+      <p className="m-0 text-[12px] leading-relaxed text-tx3">
+        MateERP is a NetaMate enterprise application. Financial records, access permissions and
+        business operations are administered within the licensed organization. For application
+        preferences or company branding, use Settings &amp; Administration.
+      </p>
     </PageContainer>
   );
 }

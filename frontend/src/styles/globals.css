@@ -71,7 +71,7 @@
 
   --font-sans: var(--font-plex-sans), system-ui, sans-serif;
   --font-mono: var(--font-plex-mono), ui-monospace, monospace;
-  --font-wordmark: var(--font-astro), var(--font-plex-sans), sans-serif;
+  --font-wordmark: var(--font-optimus), var(--font-plex-sans), sans-serif;
 
   /* Sharp-corner geometry is mandatory: the radius scale is intentionally empty. */
   --radius-*: initial;

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -29,6 +29,7 @@ export function CustomersPage() {
   const money = useMoney();
   const router = useRouter();
   const [edit, setEdit] = useState(false);
+  useEffect(() => { const timer = window.setTimeout(() => { if (new URLSearchParams(window.location.search).get('new') === '1' && can('sales.manage')) setEdit(true); }, 0); return () => window.clearTimeout(timer); }, [can]);
   return (
     <Screen
       eyebrow={EYEBROW}

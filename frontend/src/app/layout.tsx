@@ -38,9 +38,9 @@ const signature = Herr_Von_Muellerhoff({
   display: 'swap',
 });
 
-const astro = localFont({
-  src: '../assets/fonts/astro.ttf',
-  variable: '--font-astro',
+const optimus = localFont({
+  src: '../assets/fonts/optimus.woff2',
+  variable: '--font-optimus',
   display: 'block',
 });
 
@@ -59,7 +59,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       data-theme="light"
       data-sidebar="full"
       suppressHydrationWarning
-      className={`${plexSans.variable} ${plexMono.variable} ${plexSerif.variable} ${signature.variable} ${astro.variable}`}
+      className={`${plexSans.variable} ${plexMono.variable} ${plexSerif.variable} ${signature.variable} ${optimus.variable}`}
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: PREFERENCES_BOOTSTRAP_SCRIPT }} />
