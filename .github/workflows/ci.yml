@@ -50,6 +50,11 @@ jobs:
       - run: pip install -r requirements/dev.txt
       - run: ruff check .
       - run: ruff format --check .
+      - name: Test AIA rotation, failure recovery and credential safety
+        run: |
+          python3 -m unittest discover -s ../deploy/aia/tests -p 'test_*.py'
+          python3 -m py_compile ../deploy/aia/rotate.py
+          bash -n ../deploy/aia/install.sh
       - run: python manage.py check
         env:
           DJANGO_SETTINGS_MODULE: config.settings.test
