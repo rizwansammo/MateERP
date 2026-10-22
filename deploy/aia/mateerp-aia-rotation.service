@@ -1,0 +1,29 @@
+[Unit]
+Description=MateERP AI Assistant (AIA) secure API token rotation
+After=docker.service network-online.target
+Wants=network-online.target
+Requires=docker.service
+ConditionPathExists=/opt/MateERP/.env.production
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+UMask=0077
+WorkingDirectory=/opt/MateERP
+ExecStart=/usr/bin/python3 /usr/local/libexec/mateerp-aia/rotate.py
+TimeoutStartSec=300
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/etc/mateerp/aia /run
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+LockPersonality=true
+RestrictSUIDSGID=true
+MemoryMax=192M
+TasksMax=50
+StandardOutput=journal
+StandardError=journal
