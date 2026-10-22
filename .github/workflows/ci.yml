@@ -121,13 +121,62 @@ jobs:
           cache-from: type=gha,scope=mateerp-${{ matrix.component }}
           cache-to: type=gha,mode=max,scope=mateerp-${{ matrix.component }}
 
+  staging:
+    name: Verify GHCR images in isolated HTTPS staging
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    needs: [images]
+    runs-on: ${{ fromJSON(vars.MATEERP_CI_RUNNER_LABELS || '["ubuntu-latest"]') }}
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Isolated SSL staging using the actual GHCR images
+        env:
+          RELEASE_SHA: ${{ github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          work="$(mktemp -d "${RUNNER_TEMP}/mateerp7e.XXXXXXXX")"
+          project="mateerp7e"
+          finish() {
+            cd "$work"
+            docker compose -p "$project" --env-file .env.staging -f compose.staging.yml down --volumes --remove-orphans --timeout 20 || true
+            cd /
+            rm -rf "$work"
+          }
+          trap finish EXIT INT TERM
+          test -z "$(docker ps -aq --filter label=com.docker.compose.project="$project")"
+          cp deploy/staging/compose.staging.yml "$work/compose.staging.yml"
+          cp deploy/staging/nginx.staging.conf "$work/nginx.staging.conf"
+          cd "$work"
+          printf 'MATEERP_IMAGE_TAG=sha-%s\nMATEERP_DB_PASSWORD=%s\nDJANGO_SECRET_KEY=%s\n'             "$RELEASE_SHA" "$(openssl rand -hex 24)" "$(openssl rand -hex 48)" > .env.staging
+          openssl req -x509 -newkey rsa:2048 -sha256 -nodes -days 1             -keyout key.pem -out cert.pem             -subj /CN=erp.netamate.com             -addext subjectAltName=DNS:erp.netamate.com >/dev/null 2>&1
+          docker compose -p "$project" --env-file .env.staging -f compose.staging.yml config --quiet
+          docker compose -p "$project" --env-file .env.staging -f compose.staging.yml pull
+          docker compose -p "$project" --env-file .env.staging -f compose.staging.yml up -d --wait --wait-timeout 150 database
+          docker compose -p "$project" --env-file .env.staging -f compose.staging.yml run --rm --no-deps backend python manage.py migrate --noinput
+          docker compose -p "$project" --env-file .env.staging -f compose.staging.yml up -d --wait --wait-timeout 180 backend frontend tls
+          curl -kfsS --retry 6 --retry-delay 2 --resolve erp.netamate.com:18443:127.0.0.1             https://erp.netamate.com:18443/api/v1/health/ | python3 -c 'import json,sys; assert json.load(sys.stdin)["status"] == "ok"'
+          curl -kfsS --retry 6 --retry-delay 2 --resolve erp.netamate.com:18443:127.0.0.1             -o /dev/null https://erp.netamate.com:18443/login
+          echo 'GHCR-sourced PostgreSQL 18 + Django + Next.js + TLS staging verified'
+
   deploy:
     name: Gated production deployment
     if: >-
       ${{ github.event_name == 'push' &&
           github.ref == 'refs/heads/main' &&
           vars.MATEERP_AUTO_DEPLOY_ENABLED == 'true' }}
-    needs: [images]
+    needs: [staging]
     runs-on: ${{ fromJSON(vars.MATEERP_CI_RUNNER_LABELS || '["ubuntu-latest"]') }}
     timeout-minutes: 20
     permissions:

@@ -19,3 +19,7 @@ Run only a distinct `mateerp7e` Compose project, with separate networks, volumes
 The production app still needs first-time private GHCR pull credentials, production 0600 secrets, protected SSH deploy credentials, external offsite Restic repository, full migration/backup checks and explicit Phase 7F approval. After go-live, enable both deploy gates to permit future automatic production deploys.
 
 If the repository is set private before the self-hosted runner is available, CI jobs may queue and GHCR pushes won't occur. Keeping a token-controlled production deploy does NOT imply that GitHub-hosted minutes become unlimited.
+
+## Enforced GHCR Staging Acceptance
+
+CI jobs must pass before image builds. Both GHCR images must be published with the same SHA tag before the gated staging job starts. The staging job uses its own disposable PostgreSQL 18 database and separate Compose project, pulls the exact private GHCR images with the workflow's scoped GITHUB_TOKEN, runs migrations, verifies Django health and Next.js login through a temporary self-signed HTTPS ingress limited to 127.0.0.1:18443, then destroys all temporary containers, networks, and volumes. Production deployment now depends on this staging job. No staging tests use or modify the production MateServer Nginx site, host firewall, database, archive, or document volume.
