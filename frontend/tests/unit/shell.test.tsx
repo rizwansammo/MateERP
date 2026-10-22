@@ -167,7 +167,7 @@ describe('sidebar', () => {
     mockApi(baseRoutes);
     renderWithAuth(<Sidebar open={false} onNavigate={() => {}} />);
     const home = screen.getByRole('link', { name: 'MateERP home' });
-    const mark = within(home).getAllByRole('img', { name: 'MateERP' })[0];
+    const mark = within(home).getAllByRole('img', { name: 'MateERP' })[0]!;
     expect(mark.parentElement?.className).toContain('text-[26px]');
     expect(mark.children[1]?.className).toContain('text-[.82em]');
     expect(mark.children[2]?.className).toContain('text-brand');
