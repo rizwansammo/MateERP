@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Badge } from "@/components/ui/Badge";
 import { Banner } from "@/components/ui/Banner";
@@ -83,6 +83,7 @@ function JournalDirectory() {
   const [source, setSource] = useState("");
   const [page, setPage] = useState(1);
   const [edit, setEdit] = useState<"manual" | "opening" | null>(null);
+  useEffect(() => { const timer = window.setTimeout(() => { if (new URLSearchParams(window.location.search).get("new") === "1" && can("accounting.manage")) setEdit("manual"); }, 0); return () => window.clearTimeout(timer); }, [can]);
   const query = useFinance<Page<Journal>>(
     `/accounting/journals/?page=${page}&search=${encodeURIComponent(debounced)}&kind=${source}&status=${status === "all" ? "" : status}&${range.query}`,
   );

@@ -13,22 +13,26 @@ import { useTheme } from '@/lib/preferences';
 
 import { Breadcrumbs } from './Breadcrumbs';
 
-/*
- * Search and quick-create belong to the business modules and stay disabled
- * (with the delivering phase named) until those modules exist.
- */
-const PLANNED = {
-  search: 'Global cross-module search is planned. Use the search in each directory.',
-  create: 'Quick-create actions arrive with the business modules (Phases 3–4).',
-};
+import { GlobalSearch, QuickCreate } from './GlobalActions';
 
-type Menu = 'account' | 'notifications' | null;
+type Menu = 'account' | 'notifications' | 'create' | 'search' | null;
 
 export function Header({ onOpenNavigation }: { onOpenNavigation: () => void }) {
   const { theme, toggleTheme } = useTheme();
   const { savePreferences } = useAuth();
   const [menu, setMenu] = useState<Menu>(null);
   const themeLabel = theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
+  useEffect(() => {
+    const openSearch = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        setMenu('search');
+      }
+    };
+    window.addEventListener('keydown', openSearch);
+    return () => window.removeEventListener('keydown', openSearch);
+  }, []);
+
 
   useEffect(() => {
     if (!menu) return;
@@ -48,26 +52,31 @@ export function Header({ onOpenNavigation }: { onOpenNavigation: () => void }) {
 
         <button
           type="button"
-          disabled
-          title={PLANNED.search}
-          aria-label="Search (not yet available)"
-          className="flex h-[34px] w-[34px] flex-none items-center gap-2 border border-bd bg-sf2 px-2.5 text-left text-[12.5px] text-tx3 lg:w-[340px] max-sm:hidden"
+          onClick={() => setMenu('search')}
+          aria-label="Search records and pages"
+          aria-haspopup="dialog"
+          title="Search records and pages (Ctrl K)"
+          className="flex h-[34px] w-[34px] flex-none items-center gap-2 border border-bd bg-sf2 px-2.5 text-left text-[12.5px] text-tx3 hover:bg-sf3 lg:w-[340px]"
         >
           <Icon name="search" size={18} className="-ml-px" />
           <span className="hidden flex-1 lg:inline">Search records, documents, pages…</span>
           <span className="hidden border border-bd2 px-[5px] py-px font-mono text-[10.5px] font-medium lg:inline">Ctrl K</span>
         </button>
 
-        <button
-          type="button"
-          disabled
-          title={PLANNED.create}
-          aria-label="New (not yet available)"
-          className="flex h-[34px] flex-none items-center gap-[5px] border border-pr bg-pr px-3 text-[12.5px] font-semibold text-prt disabled:cursor-not-allowed max-lg:px-2"
-        >
-          <Icon name="add" size={18} />
-          <span className="hidden lg:inline">New</span>
-        </button>
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => toggle('create')}
+            aria-label="Create new record"
+            aria-haspopup="menu"
+            aria-expanded={menu === 'create'}
+            className="flex h-[34px] flex-none items-center gap-[5px] border border-pr bg-pr px-3 text-[12.5px] font-semibold text-prt hover:brightness-95 max-lg:px-2"
+          >
+            <Icon name="add" size={18} />
+            <span className="hidden lg:inline">New</span>
+          </button>
+          {menu === 'create' && <QuickCreate onClose={() => setMenu(null)} />}
+        </div>
 
         <div className="relative">
           <NotificationsButton open={menu === 'notifications'} onToggle={() => toggle('notifications')} />
@@ -94,7 +103,8 @@ export function Header({ onOpenNavigation }: { onOpenNavigation: () => void }) {
           {menu === 'account' && <AccountMenu onClose={() => setMenu(null)} />}
         </div>
       </header>
-      {menu && (
+      {menu === 'search' && <GlobalSearch onClose={() => setMenu(null)} />}
+      {menu && menu !== 'search' && (
         <div aria-hidden="true" className="fixed inset-x-0 top-14 bottom-0 z-[25]" onClick={() => setMenu(null)} />
       )}
     </>

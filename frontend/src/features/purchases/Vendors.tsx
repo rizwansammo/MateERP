@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Banner } from '@/components/ui/Banner';
 import { InfoPanel } from '@/components/ui/InfoPanel';
@@ -27,6 +27,7 @@ export function VendorDrawer({ vendor, onClose }: { vendor?: Vendor; onClose: ()
 }
 export function VendorsPage() {
   const { can } = useAuth(); const money = useMoney(); const [create, setCreate] = useState(false);
+  useEffect(() => { const timer = window.setTimeout(() => { if (new URLSearchParams(window.location.search).get('new') === '1' && can('vendors.manage')) setCreate(true); }, 0); return () => window.clearTimeout(timer); }, [can]);
   return <Screen eyebrow="Purchases & Expenses" title="Vendors & suppliers" description="Supplier identities, payment terms and outstanding company obligations." actions={can('vendors.manage') && <Button variant="primary" icon="add" onClick={() => setCreate(true)}>New vendor</Button>}>
     <ListPanel<Vendor> path="/purchasing/vendors/" search="Search vendors…" filters={[{ value: 'all', label: 'All' }, { value: 'active', label: 'Active', query: 'status=active' }, { value: 'inactive', label: 'Inactive', query: 'status=inactive' }]} columns={[
       { key: 'name', label: 'Vendor', render: v => <Primary href={`/purchases/vendors/${v.id}`} title={v.name} sub={`${v.code} · ${v.contact_name || v.email}`} /> },

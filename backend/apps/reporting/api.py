@@ -80,6 +80,26 @@ class CatalogView(APIView):
         return Response(catalog.visible(request.user))
 
 
+class GlobalSearchResultSerializer(serializers.Serializer):
+    category = serializers.CharField()
+    title = serializers.CharField()
+    description = serializers.CharField()
+    href = serializers.CharField()
+
+
+@extend_schema(tags=["reporting"], responses=GlobalSearchResultSerializer(many=True))
+class GlobalSearchView(APIView):
+    permission_classes = [IsActiveUser]
+
+    def get(self, request):
+        from .search import global_results
+
+        term = request.query_params.get("q", "")
+        if not isinstance(term, str) or len(term) > 100:
+            raise serializers.ValidationError({"q": "Search query must be at most 100 characters."})
+        return Response(global_results(request.user, term))
+
+
 class CashAllocation(serializers.Serializer):
     category = serializers.ChoiceField(choices=cash_flow.CATEGORIES)
     amount = DecimalText()
@@ -205,6 +225,7 @@ class DataView(APIView):
 urlpatterns = [
     path("reporting/dashboard/", DashboardView.as_view()),
     path("reporting/catalog/", CatalogView.as_view()),
+    path("reporting/search/", GlobalSearchView.as_view()),
     path("reporting/cash-movements/", CashMovementView.as_view()),
     path("reporting/cash-reviews/", CashReviewView.as_view()),
     path("reporting/reports/<str:which>/", DataView.as_view()),

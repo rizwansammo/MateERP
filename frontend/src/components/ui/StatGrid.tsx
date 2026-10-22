@@ -36,16 +36,19 @@ export function StatGrid({
   stats,
   minWidth = 190,
   small = false,
+  balancedSeven = false,
 }: {
   stats: Stat[];
   minWidth?: number;
+  /** Seven equal-width cards per row on desktop; preserves full grid width. */
+  balancedSeven?: boolean;
   /** 18px values, as used for configuration summaries. */
   small?: boolean;
 }) {
   return (
     <div
-      className="grid border-l border-t border-bd"
-      style={{ gridTemplateColumns: `repeat(auto-fit, minmax(${minWidth}px, 1fr))` }}
+      className={cn('grid border-l border-t border-bd', balancedSeven && 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-7')}
+      style={balancedSeven ? undefined : { gridTemplateColumns: `repeat(auto-fit, minmax(${minWidth}px, 1fr))` }}
     >
       {stats.map((stat) => {
         const tone = stat.tone ?? 'default';

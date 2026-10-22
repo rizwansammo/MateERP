@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from 'next';
-import { Herr_Von_Muellerhoff, IBM_Plex_Mono, IBM_Plex_Sans, IBM_Plex_Serif } from 'next/font/google';
 import localFont from 'next/font/local';
 import type { ReactNode } from 'react';
 
@@ -8,39 +7,23 @@ import { PREFERENCES_BOOTSTRAP_SCRIPT } from '@/lib/preferences';
 
 import '@/styles/globals.css';
 
-// Fonts are self-hosted at build time: no runtime requests to third parties.
-const plexSans = IBM_Plex_Sans({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-plex-sans',
-  display: 'swap',
-});
+// Reproducible, bundled open-source IBM Plex font faces; never fetch from
+// Google Fonts during builds or from third parties in the browser.
+import '@fontsource/ibm-plex-sans/400.css';
+import '@fontsource/ibm-plex-sans/500.css';
+import '@fontsource/ibm-plex-sans/600.css';
+import '@fontsource/ibm-plex-sans/700.css';
+import '@fontsource/ibm-plex-mono/400.css';
+import '@fontsource/ibm-plex-mono/500.css';
+import '@fontsource/ibm-plex-mono/600.css';
+import '@fontsource/ibm-plex-serif/400.css';
+import '@fontsource/ibm-plex-serif/600.css';
+import '@fontsource/ibm-plex-serif/700.css';
+import '@fontsource/herr-von-muellerhoff/400.css';
 
-const plexMono = IBM_Plex_Mono({
-  subsets: ['latin'],
-  weight: ['400', '500', '600'],
-  variable: '--font-plex-mono',
-  display: 'swap',
-});
-
-// Document typography: serif option and the typed-signature script face.
-const plexSerif = IBM_Plex_Serif({
-  subsets: ['latin'],
-  weight: ['400', '600', '700'],
-  variable: '--font-plex-serif',
-  display: 'swap',
-});
-
-const signature = Herr_Von_Muellerhoff({
-  subsets: ['latin'],
-  weight: '400',
-  variable: '--font-signature',
-  display: 'swap',
-});
-
-const astro = localFont({
-  src: '../assets/fonts/astro.ttf',
-  variable: '--font-astro',
+const optimus = localFont({
+  src: '../assets/fonts/optimus.woff2',
+  variable: '--font-optimus',
   display: 'block',
 });
 
@@ -59,7 +42,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       data-theme="light"
       data-sidebar="full"
       suppressHydrationWarning
-      className={`${plexSans.variable} ${plexMono.variable} ${plexSerif.variable} ${signature.variable} ${astro.variable}`}
+      className={`${optimus.variable}`}
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: PREFERENCES_BOOTSTRAP_SCRIPT }} />

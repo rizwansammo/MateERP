@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Banner } from '@/components/ui/Banner';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -65,6 +65,7 @@ export function ExpenseDrawer({ expense, onClose }: { expense?: Expense; onClose
 }
 export function PayablesPage({ kind }: { kind: 'bills' | 'expenses' }) {
   const { can } = useAuth(); const money = useMoney(); const [create, setCreate] = useState(false); const bills = kind === 'bills';
+  useEffect(() => { const timer = window.setTimeout(() => { if (new URLSearchParams(window.location.search).get('new') === '1' && can(kind === 'bills' ? 'bills.manage' : 'expenses.manage')) setCreate(true); }, 0); return () => window.clearTimeout(timer); }, [can, kind]);
   return <Screen eyebrow="Purchases & Expenses" title={bills ? 'Vendor bills' : 'Operating expenses'} description={bills ? 'Supplier invoices, approval, posted liabilities and settlement history.' : 'Company-funded operating costs, paid now or accrued for a vendor.'} actions={<>{can('onboarding.manage') && <Link href="/purchases/onboarding">Historical Entry & Cutover</Link>}{can(bills ? 'bills.manage' : 'expenses.manage') && <Button variant="primary" icon="add" onClick={() => setCreate(true)}>{bills ? 'New vendor bill' : 'Record expense'}</Button>}</>}>
     <ListPanel<Bill | Expense> path={`/purchasing/${kind}/`} filters={[{ value: 'all', label: 'All' }, { value: 'draft', label: 'Drafts', query: 'status=draft' }, { value: 'approval', label: 'Awaiting approval', query: 'status=awaiting_approval' }, { value: 'posted', label: 'Posted', query: 'status=posted' }, { value: 'paid', label: 'Paid', query: 'status=paid' }, { value: 'void', label: 'Void', query: 'status=void' }]} columns={[
       { key: 'no', label: bills ? 'Bill' : 'Expense', render: p => <Primary href={`/purchases/${kind}/${p.id}`} mono title={p.number ?? 'Draft'} sub={'vendor_reference' in p ? p.vendor_reference : p.description} /> },
