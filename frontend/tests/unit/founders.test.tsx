@@ -32,7 +32,9 @@ it('denies founder corporate screens to ordinary financial viewers', async () =>
 it('creates real participant records without treating them as shares or cash', async () => {
   const calls = mockApi({...common,'POST /founders/parties/': {id:3}});
   renderWithAuth(<PartiesPage/>);
+  expect(screen.queryByText(/Provisional agreements can evolve before registration/)).not.toBeInTheDocument();
   await userEvent.click(screen.getByRole('button',{name:'Add participant'}));
+  expect(screen.queryByText(/Adding a participant does not issue shares/)).not.toBeInTheDocument();
   await userEvent.type(screen.getByLabelText('Full / organization name'),'New partner');
   await userEvent.click(screen.getByRole('button',{name:'Save'}));
   await waitFor(()=>expect(calls.find(c=>c.method==='POST' && c.path==='/founders/parties/')?.body).toMatchObject({name:'New partner',user_id:null}));
@@ -80,11 +82,13 @@ it('shows company coverage separately from verified personal contribution target
   expect(screen.getByRole('columnheader',{name:'Company coverage'})).toBeInTheDocument();
 });
 
-it('keeps provisional agreements distinct from issued units and shows backend failure honestly', async () => {
+it('shows provisional ownership percentages clearly and preserves backend error feedback', async () => {
   mockApi({...common,'/ownership/register/':{provisional:{proposal_id:2,effective_date:'2026-03-01',weights:{'1':'40','2':'40','3':'20'}},classes:{}},'/ownership/capital/':[403,{error:{code:'denied',message:'Capital access denied',details:null,request_id:'x'}}]});
   renderWithAuth(<OwnershipPage section="overview"/>);
   expect(await screen.findByText('Capital access denied')).toBeInTheDocument();
-  expect(screen.getAllByText(/agreed, not formally issued shares/)).toHaveLength(3);
+  expect(screen.getAllByText('40%')).toHaveLength(2);
+  expect(screen.getByText('20%')).toBeInTheDocument();
+  expect(screen.queryByText(/not formally issued shares/)).not.toBeInTheDocument();
 });
 
 it('shows historical posted costs against the frozen foreign-currency estimate',async()=>{
