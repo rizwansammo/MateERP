@@ -1,7 +1,6 @@
 'use client';
 import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
-import { Banner } from '@/components/ui/Banner';
 import { FormDrawer, Screen, body } from '@/features/commerce/forms';
 import { ListPanel, Primary } from '@/features/commerce/shared';
 import { api } from '@/lib/api/client';
@@ -17,13 +16,12 @@ export function PartyDrawer({party,onClose}:{party?:Party;onClose:()=>void}) {
     {key:'joined',label:'Participation starts',type:'date',required:true},{key:'left',label:'Participation ends (optional)',type:'date'},
     ...(can('users.manage') ? [{key:'user_id',label:'Linked ERP user ID (optional)',type:'number' as const,hint:'Link an existing account for authenticated consent. Leave blank for evidence-backed external attestations.'}] : []),
     {key:'is_founder',label:'Founder finance participant',type:'checkbox'},{key:'is_shareholder',label:'Shareholder / investor',type:'checkbox'}, {key:'is_partner',label:'Business partner',type:'checkbox'}, {key:'is_active',label:'Active',type:'checkbox'}, {key:'notes',label:'Notes',type:'textarea'},
-  ]} onSave={v=>{const payload=body(v); if(!v.left) payload.left=null; if(!can('users.manage')) delete payload.user_id; return party ? api.patch(`/founders/parties/${party.id}/`,payload) : api.post('/founders/parties/',payload);}}><Banner tone="info">Adding a participant does not issue shares, change an ownership agreement or record company money.</Banner></FormDrawer>;
+  ]} onSave={v=>{const payload=body(v); if(!v.left) payload.left=null; if(!can('users.manage')) delete payload.user_id; return party ? api.patch(`/founders/parties/${party.id}/`,payload) : api.post('/founders/parties/',payload);}} />;
 }
 
 export function PartiesPage() {
   const {can}=useAuth(); const [edit,setEdit]=useState<Party|'new'|null>(null);
-  return <Screen eyebrow="Ownership & Capital" title="Shareholders & partners" description="Founders, investors and partners. Agreement percentages and formal share units are recorded through their own approved changes." actions={(can('ownership.manage') || can('founder.transactions.manage')) && <Button variant="primary" onClick={()=>setEdit('new')}>Add participant</Button>}>
-    <Banner tone="info">Provisional agreements can evolve before registration. Formal shares require documented issuance or transfer; a contact record alone creates no ownership.</Banner>
+  return <Screen eyebrow="Ownership & Capital" title="Shareholders & partners" description="Manage founders, shareholders, and partners." actions={(can('ownership.manage') || can('founder.transactions.manage')) && <Button variant="primary" onClick={()=>setEdit('new')}>Add participant</Button>}>
     <ListPanel<Party> path="/founders/parties/" columns={[
       {key:'name',label:'Name',render:p=><Primary title={p.display_name || p.name} sub={p.email}/>}, {key:'kind',label:'Type',render:p=>[p.is_founder && 'Founder',p.is_shareholder && 'Shareholder',p.is_partner && 'Partner'].filter(Boolean).join(' · ') || p.kind},
       {key:'joined',label:'Joined',render:p=>p.joined},{key:'account',label:'ERP account',render:p=>p.user ? `User #${p.user}` : 'External · documented attestation'}, {key:'status',label:'Status',render:p=>p.is_active ? 'Active' : 'Inactive'},
